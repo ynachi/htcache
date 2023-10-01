@@ -17,6 +17,20 @@ pub struct ThreadPool {
 }
 
 impl ThreadPool {
+    /// Creates a new thread pool with the specified number of workers.
+    ///
+    /// # Arguments
+    ///
+    /// * `size` - The number of workers to create in the thread pool.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if `size` is zero or if no thread could 
+    /// be created by the Operating System.
+    ///
+    /// # Returns
+    ///
+    /// A new `ThreadPool` instance with the specified number of workers.
     pub fn new(size: usize) -> ThreadPool {
         if size == 0 {
             panic!("cannot create a thread pool with zero workers");
@@ -40,6 +54,23 @@ impl ThreadPool {
         }
     }
 
+    /// Executes the given closure `f` on a thread in the thread pool.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - A closure to be executed on a thread in the thread pool.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use redisy::threadpool::ThreadPool;
+    ///
+    /// let thread_pool = ThreadPool::new(4);
+    ///
+    /// thread_pool.execute(|| {
+    ///     println!("This closure is executed on a thread in the thread pool");
+    /// });
+    /// ```
     pub fn execute<F>(&self, f: F)
     where
         F: FnOnce() + Send + 'static,
@@ -49,6 +80,21 @@ impl ThreadPool {
         self.sender.send(job).unwrap();
     }
 
+    /// Shuts down the thread pool. Sends a `Message::Shutdown` to each worker and waits for them to finish.
+    /// Decrements the `size` of the thread pool as each worker thread finishes to avoid using a dropped `sender`
+    /// in subsequent calls to `shutdown`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use redisy::threadpool::ThreadPool;
+    ///
+    /// let mut pool = ThreadPool::new(4).unwrap();
+    ///
+    /// // ... do some work with the thread pool ...
+    ///
+    /// pool.shutdown();
+    /// ```
     pub fn shutdown(&mut self) {
         for _ in 0..self.size {
             // @TODO Manage error
@@ -70,7 +116,7 @@ impl ThreadPool {
 
 impl Drop for ThreadPool {
     /// If a ThreadPool goes out of scope, it would drop the channel sender end. Dropping this end
-    /// will cause the connexion to drop so some jobs might not reach execution. The programmer is
+    /// will cause the connection to drop so some jobs might not reach execution. The programmer is
     /// suppose to call the `shutdown` method by himself but in case he does not, the drop method
     /// would hold his back by joining the threads. Doing so will allow all the jobs to finish and
     /// the threads to gracefully exit.
@@ -86,6 +132,16 @@ struct Worker {
 }
 
 impl Worker {
+    /// Creates a new worker thread with the given id and shared receiver.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `id` - An identifier for the worker thread.
+    /// * `receiver` - A shared receiver for the worker thread to receive messages from.
+    /// 
+    /// # Returns
+    /// 
+    /// An `Option` containing a `Worker` if the thread was successfully created, or `None` if the OS failed to create the thread.
     fn new(id: usize, receiver: SharedReceiver) -> Option<Worker> {
         // @TODO, this will panic if the OS cannot create a thread for some reasons.
         // fix it using thread builder
@@ -113,16 +169,16 @@ impl Worker {
             }
         });
 
-            match thread {
-                Ok(thread) => Some(Worker {
-                    id,
-                    thread: Some(thread),
-                }),
-                Err(e) => {
-                    println!("os failed to create thread {}: {}", id, e);
-                    None
-                }
+        match thread {
+            Ok(thread) => Some(Worker {
+                id,
+                thread: Some(thread),
+            }),
+            Err(e) => {
+                println!("os failed to create thread {}: {}", id, e);
+                None
             }
+        }
     }
 }
 
@@ -132,6 +188,20 @@ struct SharedReceiver {
 }
 
 impl SharedReceiver {
+    /// Retrieves a message from the receiver channel.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Message` enum variant that contains either a `Task` or an `Error` message.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use redisy::threadpool::ThreadPool;
+    ///
+    /// let threadpool = ThreadPool::new(4);
+    /// let message = threadpool.get_message();
+    /// ```
     fn get_message(&self) -> Message {
         let mutex_guard = self.receiver.lock();
         match mutex_guard {
@@ -153,6 +223,8 @@ impl Iterator for SharedReceiver {
     }
 }
 
+/// Creates a shared channel for communication between threads.
+/// Returns a tuple containing a sender and a shared receiver.
 fn create_shared_channel() -> (mpsc::Sender<Message>, SharedReceiver) {
     let (sender, receiver) = mpsc::channel();
     (
@@ -163,6 +235,7 @@ fn create_shared_channel() -> (mpsc::Sender<Message>, SharedReceiver) {
     )
 }
 
+/// A type alias for a job to be executed by the thread pool.
 type Job = Box<dyn FnOnce() + 'static + Send>;
 
 /// `Message` represents work which will be shared to the worker threads. We use enum to easily
