@@ -1,7 +1,4 @@
-use std::{
-    sync::{mpsc, Arc, Mutex},
-    thread,
-};
+use std::{io, sync::{mpsc, Arc, Mutex}, thread};
 
 /// `ThreadPool` is a data structure representing a pool of threads which continuously watch
 /// for new jobs to execute until they are explicitly shutdown. This struct is not meant to be
@@ -39,7 +36,7 @@ impl ThreadPool {
 
         let mut workers = Vec::with_capacity(size);
         for i in 0..size {
-            if let Some(worker) = Worker::new(i, receiver.clone()) {
+            if let Ok(worker) = Worker::new(i, receiver.clone()) {
                 workers.push(worker);
             }
         }
@@ -50,7 +47,7 @@ impl ThreadPool {
         ThreadPool {
             workers,
             sender,
-            size
+            size,
         }
     }
 
@@ -76,8 +73,10 @@ impl ThreadPool {
         F: FnOnce() + Send + 'static,
     {
         let job = Message::Task(Box::new(f));
-        // @TODO Manage error
-        self.sender.send(job).unwrap();
+        match self.sender.send(job) {
+            Ok(_) => {},
+            Err(e) => println!("fail sending job to worker: {}", e),
+        };
     }
 
     /// Shuts down the thread pool. Sends a `Message::Shutdown` to each worker and waits for them to finish.
@@ -142,7 +141,7 @@ impl Worker {
     /// # Returns
     /// 
     /// An `Option` containing a `Worker` if the thread was successfully created, or `None` if the OS failed to create the thread.
-    fn new(id: usize, receiver: SharedReceiver) -> Option<Worker> {
+    fn new(id: usize, receiver: SharedReceiver) -> io::Result<Worker> {
         // @TODO, this will panic if the OS cannot create a thread for some reasons.
         // fix it using thread builder
         let builder = thread::Builder::new();
@@ -154,6 +153,8 @@ impl Worker {
                     Message::Task(job) => {
                         // @TODO Manage logging
                         println!("worker {} received a job", id);
+                        // @TODO, if this job panic, it would end the thread unexpectedly.
+                        // @TODO Find a way to manage that
                         job();
                     }
                     Message::Shutdown => {
@@ -167,18 +168,12 @@ impl Worker {
                     }
                 }
             }
-        });
+        })?;
 
-        match thread {
-            Ok(thread) => Some(Worker {
-                id,
-                thread: Some(thread),
-            }),
-            Err(e) => {
-                println!("os failed to create thread {}: {}", id, e);
-                None
-            }
-        }
+        Ok(Worker {
+            id,
+            thread: Some(thread),
+        })
     }
 }
 
