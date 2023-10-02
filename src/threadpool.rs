@@ -28,7 +28,7 @@ impl ThreadPool {
     /// # Returns
     ///
     /// A new `ThreadPool` instance with the specified number of workers.
-    pub fn new(size: usize) -> ThreadPool {
+    pub fn new(size: usize) -> io::Result<ThreadPool> {
         if size == 0 {
             panic!("cannot create a thread pool with zero workers");
         }
@@ -36,19 +36,17 @@ impl ThreadPool {
 
         let mut workers = Vec::with_capacity(size);
         for i in 0..size {
-            if let Ok(worker) = Worker::new(i, receiver.clone()) {
-                workers.push(worker);
-            }
+                workers.push(Worker::new(i, receiver.clone())?);
         }
 
         // A pool without any worker cannot be used, so panic is this case
         assert!(!workers.is_empty());
 
-        ThreadPool {
+        Ok(ThreadPool {
             workers,
             sender,
             size,
-        }
+        })
     }
 
     /// Executes the given closure `f` on a thread in the thread pool.

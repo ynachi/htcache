@@ -1,7 +1,7 @@
 use redisy::threadpool::ThreadPool;
 
 fn main() {
-    let mut pool = ThreadPool::new(4);
+    let mut pool = ThreadPool::new(4).unwrap();
     for i in 0..10 {
         pool.execute(move || println!("Running job id {}", i));
     }
