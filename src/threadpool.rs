@@ -30,7 +30,8 @@ impl ThreadPool {
     /// A new `ThreadPool` instance with the specified number of workers.
     pub fn new(size: usize) -> io::Result<ThreadPool> {
         if size == 0 {
-            panic!("cannot create a thread pool with zero workers");
+            return Err(io::Error::new(io::ErrorKind::InvalidInput,
+                                      "cannot create a thread pool with zero workers"));
         }
         let (sender, receiver) = create_shared_channel();
 
@@ -38,9 +39,6 @@ impl ThreadPool {
         for i in 0..size {
                 workers.push(Worker::new(i, receiver.clone())?);
         }
-
-        // A pool without any worker cannot be used, so panic is this case
-        assert!(!workers.is_empty());
 
         Ok(ThreadPool {
             workers,
@@ -232,7 +230,7 @@ enum Message {
     /// `Job` represents a job to be executed by a worker
     Task(Job),
     /// Failing to read messages from the shared should not error. This is why we define an Error
-    /// message variant which will ne shared to the thread in case we get a channel receive error
+    /// message variant which will be shared to the thread in case we get a channel receive error
     /// or a mutex lock error (poisoned or blocking).
     Error(String),
 }
