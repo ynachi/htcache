@@ -60,7 +60,7 @@ impl ThreadPool {
     /// ```
     /// use redisy::threadpool::ThreadPool;
     ///
-    /// let thread_pool = ThreadPool::new(4);
+    /// let thread_pool = ThreadPool::new(4).unwrap();
     ///
     /// thread_pool.execute(|| {
     ///     println!("This closure is executed on a thread in the thread pool");
@@ -187,14 +187,6 @@ impl SharedReceiver {
     ///
     /// Returns a `Message` enum variant that contains either a `Task` or an `Error` message.
     ///
-    /// # Examples
-    ///
-    /// ```
-    /// use redisy::threadpool::ThreadPool;
-    ///
-    /// let threadpool = ThreadPool::new(4);
-    /// let message = threadpool.get_message();
-    /// ```
     fn get_message(&self) -> Message {
         let mutex_guard = self.receiver.lock();
         match mutex_guard {
