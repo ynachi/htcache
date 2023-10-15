@@ -56,9 +56,9 @@ impl Connection {
 
     /// Use to read a single byte. Typically used to read the frame header identifier or the from
     /// termination character.
-    fn read_single_byte(&self) -> io::Result<u8> {
+    fn read_single_byte(&mut self) -> io::Result<u8> {
         let mut buffer = [0; 1];
-        self.stream.get_ref().read_exact(&mut buffer)?;
+        self.stream.read_exact(&mut buffer)?;
         Ok(buffer[0])
     }
 
@@ -70,16 +70,27 @@ impl Connection {
         // Read until CR (0x0D) pr \r
         self.read_until(b'\r')?;
 
-        // now read LF
-        let bytes_read = self.read_until(b'\n')?;
+        // now try read LF right after CR
+        let try_lf = self.peek_single_byte()?;
+        println!("============debug debug {} debug ========================", try_lf);
 
         // the LF should immediately follow the previous CR
-        if bytes_read != 1 {
+        if try_lf != b'\n' {
             return Err(self.invalid_frame_error());
         }
 
+        // You've found the right LF, remove it from the queue
+        self.consume(1);
+
         // now convert to string
         self.buffer_to_string()
+    }
+
+    // This does not work, to fix
+    fn peek_single_byte(&self) -> io::Result<u8> {
+        let mut buffer = [0u8; 1];
+        self.stream.get_ref().peek(&mut buffer)?;
+        Ok(buffer[0])
     }
 
     fn reset_read_buffer(&mut self) {
@@ -98,6 +109,12 @@ impl Connection {
         self.stream.read_until(delimiter, &mut self.buffer)
     }
 
+    /// Consumes a number_of_bytes bytes from the connection. This is typically used with peak,
+    /// when we need to check some condition before removing the data from the stream.
+    fn consume(&mut self, number_of_bytes: usize) {
+        self.stream.consume(number_of_bytes);
+    }
+
     fn buffer_to_string(&self) -> io::Result<String> {
         let result = String::from_utf8(self.buffer.clone())
             .map_err(|_| self.invalid_frame_error())?
@@ -107,43 +124,6 @@ impl Connection {
         Ok(result)
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use std::net::{TcpListener, TcpStream};
-//     use std::time::Duration;
-//
-//     // #[test]
-//     // fn new_connection() {
-//     //     // Start a TcpListener
-//     //     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-//     //     let server = listener.local_addr().unwrap();
-//     //
-//     //     // Create a TcpStream
-//     //     let original_stream = TcpStream::connect(server).unwrap();
-//     //
-//     //     // Set the write timeout on the original stream for verification later
-//     //     original_stream
-//     //         .set_write_timeout(Some(Duration::new(0, 1000)))
-//     //         .expect("set_write_timeout call failed");
-//     //
-//     //     // Create a new connection
-//     //     let connection = Connection::new(original_stream.try_clone().unwrap());
-//     //
-//     //     // Check that the write timeout on the stream within the connection
-//     //     // is the same as the one that was set on the original stream
-//     //     let stream_in_connection_timeout = connection.stream.write_timeout().unwrap();
-//     //     let original_stream_timeout = original_stream.write_timeout().unwrap();
-//     //     assert_eq!(stream_in_connection_timeout, original_stream_timeout);
-//     //
-//     //     // check wrong timeout
-//     //     let err = original_stream
-//     //         .set_write_timeout(Some(Duration::new(0, 0)))
-//     //         .unwrap_err();
-//     //     assert_eq!(err.kind(), io::ErrorKind::InvalidInput)
-//     // }
-// }
 
 #[cfg(test)]
 mod tests {
@@ -176,7 +156,7 @@ mod tests {
             resp3.is_err(),
             "finding only CR in the middle of a response is not allowed"
         );
-        // assert_eq!("hello\nend", resp4);
+        assert_eq!("hello\nend", resp4);
 
         server.join().unwrap();
     }
