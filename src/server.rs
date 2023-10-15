@@ -1,6 +1,6 @@
-use std::{io, net};
-use std::net::TcpListener;
 use crate::threadpool;
+use std::net::TcpListener;
+use std::{io, net};
 
 pub struct Server {
     ip_address: net::IpAddr,
@@ -16,7 +16,7 @@ impl Server {
     pub fn serve(&self, listener: TcpListener) {
         for stream in listener.incoming() {
             match stream {
-                Ok(stream) => {},
+                Ok(stream) => {}
                 Err(e) => {}
             }
             //1. interpret stream to extract instruction (GET or PUT command)

@@ -1,4 +1,8 @@
-use std::{io, sync::{mpsc, Arc, Mutex}, thread};
+use std::{
+    io,
+    sync::{mpsc, Arc, Mutex},
+    thread,
+};
 
 /// `ThreadPool` is a data structure representing a pool of threads which continuously watch
 /// for new jobs to execute until they are explicitly shutdown. This struct is not meant to be
@@ -10,7 +14,7 @@ use std::{io, sync::{mpsc, Arc, Mutex}, thread};
 pub struct ThreadPool {
     workers: Vec<Worker>,
     sender: mpsc::Sender<Message>,
-    size: usize
+    size: usize,
 }
 
 impl ThreadPool {
@@ -22,7 +26,7 @@ impl ThreadPool {
     ///
     /// # Panics
     ///
-    /// This function will panic if `size` is zero or if no thread could 
+    /// This function will panic if `size` is zero or if no thread could
     /// be created by the Operating System.
     ///
     /// # Returns
@@ -30,14 +34,16 @@ impl ThreadPool {
     /// A new `ThreadPool` instance with the specified number of workers.
     pub fn new(size: usize) -> io::Result<ThreadPool> {
         if size == 0 {
-            return Err(io::Error::new(io::ErrorKind::InvalidInput,
-                                      "cannot create a thread pool with zero workers"));
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "cannot create a thread pool with zero workers",
+            ));
         }
         let (sender, receiver) = create_shared_channel();
 
         let mut workers = Vec::with_capacity(size);
         for i in 0..size {
-                workers.push(Worker::new(i, receiver.clone())?);
+            workers.push(Worker::new(i, receiver.clone())?);
         }
 
         Ok(ThreadPool {
@@ -70,7 +76,7 @@ impl ThreadPool {
     {
         let job = Message::Task(Box::new(f));
         match self.sender.send(job) {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(e) => println!("fail sending job to worker: {}", e),
         };
     }
@@ -128,14 +134,14 @@ struct Worker {
 
 impl Worker {
     /// Creates a new worker thread with the given id and shared receiver.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `id` - An identifier for the worker thread.
     /// * `receiver` - A shared receiver for the worker thread to receive messages from.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// An `Option` containing a `Worker` if the thread was successfully created, or `None` if the OS failed to create the thread.
     fn new(id: usize, receiver: SharedReceiver) -> io::Result<Worker> {
         // @TODO, this will panic if the OS cannot create a thread for some reasons.

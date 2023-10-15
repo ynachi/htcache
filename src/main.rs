@@ -1,6 +1,6 @@
+use redisy::threadpool::ThreadPool;
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
-use redisy::threadpool::ThreadPool;
 
 fn main_threadpool() {
     let mut pool = ThreadPool::new(4).unwrap();
@@ -9,7 +9,6 @@ fn main_threadpool() {
     }
     pool.shutdown();
 }
-
 
 fn main() -> std::io::Result<()> {
     let mut pool = ThreadPool::new(2).unwrap();
@@ -28,18 +27,42 @@ fn main() -> std::io::Result<()> {
         }
     }
     pool.shutdown();
-Ok(())
+    Ok(())
 }
 
 fn handle_client(mut stream: TcpStream) {
-    let mut buffer = [0;512];
+    let mut buffer = [0; 512];
     loop {
-        let bytes_read = stream.read(&mut buffer).expect("Failed to read from socket");
+        let bytes_read = stream
+            .read(&mut buffer)
+            .expect("Failed to read from socket");
         if bytes_read == 0 {
-            return
+            return;
         }
-        stream.write_all(&buffer[..bytes_read]).expect("Failed to write to socket");
+        stream
+            .write_all(&buffer[..bytes_read])
+            .expect("Failed to write to socket");
         stream.flush().expect("Failed to flush");
         println!("{}", String::from_utf8(buffer.to_vec()).unwrap());
     }
+}
+
+use std::io::BufRead;
+use std::io::BufReader;
+use std::net::TcpStream;
+
+fn main_() -> std::io::Result<()> {
+    let stream = TcpStream::connect("localhost:1234")?;
+
+    let reader = BufReader::new(&stream);
+
+    for line in reader.lines() {
+        let line = line?;
+        match line.parse::<i64>() {
+            Ok(num) => println!("Number: {}", num),
+            Err(e) => eprintln!("Error: {}", e),
+        };
+    }
+
+    Ok(())
 }
