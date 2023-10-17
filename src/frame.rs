@@ -61,7 +61,7 @@ impl Display for Frame {
             Frame::Integer(content) => write!(f, ":{}\r\n", content),
             Frame::Bulk(content) => write!(f, "${}\r\n{}\r\n", content.len(), content),
             Frame::Array(content) => {
-                let mut s = format!("*{}\r\n", content.len().to_string());
+                let mut s = format!("*{}\r\n", content.len());
                 for frame in content {
                     s.push_str(&frame.to_string());
                 }

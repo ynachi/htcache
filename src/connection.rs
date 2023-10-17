@@ -45,7 +45,8 @@ impl Connection {
         Ok(frame)
     }
 
-    pub(crate) fn read_integer_frame(&mut self) -> io::Result<Frame> {
+    /// Read integer frame variant from a connection
+    fn read_integer_frame(&mut self) -> io::Result<Frame> {
         // The next '\r\n' will be the boundary of integer to read
         let frame_val_str = self.read_until_crlf()?;
         // we successfully read the equivalent of an i64 in bytes, let's convert it
@@ -67,20 +68,35 @@ impl Connection {
     fn read_until_crlf(&mut self) -> io::Result<String> {
         self.reset_read_buffer();
 
-        // Read until CR (0x0D) pr \r
-        self.read_until(b'\r')?;
+        // Read until LF
+        let mut bytes_read_size = self.read_until(b'\n')?;
 
-        // now try read LF right after CR
-        let try_lf = self.peek_single_byte()?;
-        println!("============debug debug {} debug ========================", try_lf);
-
-        // the LF should immediately follow the previous CR
-        if try_lf != b'\n' {
-            return Err(self.invalid_frame_error());
+        // Check if buffer's size is less than 2
+        if bytes_read_size < 2 {
+            return Err(self.not_enough_data_error());
         }
 
-        // You've found the right LF, remove it from the queue
-        self.consume(1);
+        // Check if CR is preceding
+        if self.buffer[bytes_read_size - 2] != b'\r' {
+            // No CRLF found, search for next CRLF or EOF
+            loop {
+                let more_bytes_read_size = self.read_until(b'\n')?;
+                bytes_read_size += more_bytes_read_size;
+
+                // EOF reached ?
+                if more_bytes_read_size == 0 {
+                    return Err(self.unexpected_eof_error());
+                }
+
+                // Check if we've got CRLF
+                if self.buffer[bytes_read_size - 2] == b'\r' {
+                    break;
+                }
+            }
+        }
+
+        // Remove the CRLF characters from the end of the line.
+        self.buffer.drain(bytes_read_size - 2..bytes_read_size);
 
         // now convert to string
         self.buffer_to_string()
@@ -99,6 +115,14 @@ impl Connection {
 
     fn invalid_frame_error(&self) -> Error {
         Error::new(ErrorKind::InvalidData, "invalid frame")
+    }
+
+    fn not_enough_data_error(&self) -> Error {
+        Error::new(ErrorKind::InvalidData, "not enough data")
+    }
+
+    fn unexpected_eof_error(&self) -> Error {
+        Error::new(ErrorKind::InvalidData, "EOF reached while reading CRLF delimited data")
     }
 
     fn atoi_error(&self) -> Error {
@@ -139,7 +163,7 @@ mod tests {
 
         let server = thread::spawn(move || {
             let (mut socket, _) = listener.accept().unwrap();
-            write!(socket, "Hello\r\nWorld\r\nFail\rhello\nend\r\n").unwrap();
+            write!(socket, "Hello\r\nWorld\r\nYet\rhello\nend\r\nfail\r").unwrap();
         });
 
         let stream = TcpStream::connect(server_addr).unwrap();
@@ -147,16 +171,16 @@ mod tests {
 
         let resp1 = conn.read_until_crlf().unwrap();
         let resp2 = conn.read_until_crlf().unwrap();
-        let resp3 = conn.read_until_crlf();
-        let resp4 = conn.read_until_crlf().unwrap();
+        let resp3 = conn.read_until_crlf().unwrap();
+        let resp4 = conn.read_until_crlf();
 
         assert_eq!("Hello", resp1);
         assert_eq!("World", resp2);
+        assert_eq!("Yet\rhello\nend", resp3);
         assert!(
-            resp3.is_err(),
-            "finding only CR in the middle of a response is not allowed"
+            resp4.is_err(),
+            "found data not ending with CRLF and reached EOF"
         );
-        assert_eq!("hello\nend", resp4);
 
         server.join().unwrap();
     }

@@ -47,22 +47,3 @@ fn handle_client(mut stream: TcpStream) {
     }
 }
 
-use std::io::BufRead;
-use std::io::BufReader;
-use std::net::TcpStream;
-
-fn main_() -> std::io::Result<()> {
-    let stream = TcpStream::connect("localhost:1234")?;
-
-    let reader = BufReader::new(&stream);
-
-    for line in reader.lines() {
-        let line = line?;
-        match line.parse::<i64>() {
-            Ok(num) => println!("Number: {}", num),
-            Err(e) => eprintln!("Error: {}", e),
-        };
-    }
-
-    Ok(())
-}
