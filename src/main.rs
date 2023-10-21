@@ -1,5 +1,5 @@
 use redisy::threadpool::ThreadPool;
-use std::io::{Read, Write};
+use std::io::{BufReader, BufWriter, Read, Write};
 use std::net::{TcpListener, TcpStream};
 
 fn main_threadpool() {
@@ -46,4 +46,3 @@ fn handle_client(mut stream: TcpStream) {
         println!("{}", String::from_utf8(buffer.to_vec()).unwrap());
     }
 }
-

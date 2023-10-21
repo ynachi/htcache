@@ -1,9 +1,10 @@
 //! Implementing Redis framing protocol
 //! https://redis.io/docs/reference/protocol-spec/
 
+use crate::error::FrameError;
 use std::fmt::{Display, Formatter};
-use std::io;
 
+#[derive(Debug, Eq, PartialEq)]
 pub(crate) enum Frame {
     Simple(String),
     Error(String),
@@ -12,10 +13,6 @@ pub(crate) enum Frame {
     Array(Vec<Frame>),
     Null,
     Boolean(bool),
-    Double(f64),
-    // @TODO implement this later
-    // Map(HashMap<String, Frame>),
-    // Set(HashSet<Frame>),
 }
 
 impl Frame {
@@ -24,62 +21,170 @@ impl Frame {
         Frame::Array(vec![])
     }
 
-    /// Pushes a `Frame` to the back of the current frame.
-    ///
-    /// This function checks if the `self` is of type `Frame::Array(frames)` and
-    /// pushes the supplied `frame` to it. It will return an `Ok(())` on successful insertion.
-    ///
-    /// # Arguments
-    ///
-    /// * `frame` - The `Frame` to be pushed into the `self`.
-    ///
-    /// # Errors
-    ///
-    /// If the `self` is not of type `Frame::Array(frames)`, an io::Error of `InvalidData` variant is returned
-    /// with a message "can only push frames to vector variant frame".
-    ///
-    ///
-    pub(crate) fn push_back(&mut self, frame: Frame) -> io::Result<()> {
+    /// Push frames to an a frame array variant
+    pub(crate) fn push_back(&mut self, frame: Frame) -> Result<(), FrameError> {
         match self {
             Frame::Array(frames) => {
                 frames.push(frame);
                 Ok(())
             }
-            _ => Err(io::Error::new(
-                io::ErrorKind::InvalidData,
+            _ => Err(FrameError::InvalidType(String::from(
                 "can only push frames to vector variant frame",
-            )),
+            ))),
         }
     }
 }
 
+/// Turns a Frame into a slice of bytes, ready to be transferred though a network
+pub(crate) fn encode(frame: &Frame) -> Vec<u8> {
+    match frame {
+        Frame::Simple(content) => {
+            let mut bytes = vec![b'+'];
+            bytes.extend(content.as_bytes());
+            bytes.extend(b"\r\n");
+            bytes
+        }
+
+        Frame::Error(content) => {
+            let mut bytes = vec![b'-'];
+            bytes.extend(content.as_bytes());
+            bytes.extend(b"\r\n");
+            bytes
+        }
+
+        Frame::Integer(content) => {
+            let mut bytes = vec![b':'];
+            bytes.extend(content.to_string().as_bytes());
+            bytes.extend(b"\r\n");
+            bytes
+        }
+
+        Frame::Bulk(content) => {
+            let mut bytes = vec![b'$'];
+            bytes.extend(content.len().to_string().as_bytes());
+            bytes.extend(b"\r\n");
+            bytes.extend(content.as_bytes());
+            bytes.extend(b"\r\n");
+            bytes
+        }
+
+        Frame::Boolean(content) => {
+            let mut bytes = vec![b'#'];
+            let shortened_bool = {
+                if *content {
+                    "t"
+                } else {
+                    "f"
+                }
+            };
+            bytes.extend(shortened_bool.as_bytes());
+            bytes.extend(b"\r\n");
+            bytes
+        }
+
+        Frame::Null => {
+            let mut bytes = vec![b'_'];
+            bytes.extend(b"\r\n");
+            bytes
+        }
+
+        Frame::Array(frames) => {
+            let mut bytes = vec![b'*'];
+            bytes.extend(frames.len().to_string().as_bytes());
+            bytes.extend(b"\r\n");
+            for f in frames {
+                bytes.extend(encode(f));
+            }
+            bytes
+        }
+    }
+}
+
+/// buf could contain a series of frames read from a stream. Decode read a frame
+/// from this buffer and return it and cursor position in the buffer to read the next
+/// frame. If it encounters an invalid frame, it still return the next position
+/// from which another frame can be read. This means invalid data will be lost
+pub(crate) fn decode(buf: &[u8]) -> Result<(usize, Frame), FrameError> {
+    match buf[0] {
+        b':' => {
+            // let int = read_int(position, buf)?;
+            // next position = position + bytes read
+            // return
+            // to convert to int
+            // read in a [u8;8], then convert
+            let (next_position, int_value) = read_integer(buf)?;
+            Ok((next_position, Frame::Integer(int_value)))
+        }
+        _ => unimplemented!(),
+    }
+}
+
+/// Finds and return the position of the next CRLR in the buffer. Returns an invalid frame
+/// error if it cannot be found. The position returned includes the CRLR chars.
+fn crlr_position(buf: &[u8]) -> Result<usize, FrameError> {
+    let mut lf_position =
+        buf[..]
+            .iter()
+            .position(|&b| b == b'\n')
+            .ok_or(FrameError::InvalidFrame(String::from(
+                "frame does not contain any LF",
+            )))?;
+
+    if lf_position < 2 {
+        return Err(FrameError::InvalidFrame(String::from(
+            "buffer does not contain enough data",
+        )));
+    }
+
+    // If CR not preceding LF, we are not at the boundary of a frame, so keep looking
+    if buf[lf_position - 1] != b'\r' {
+        // No CRLF found, search for next CRLF or reach the end of the buffer
+        loop {
+            let next_lf_position =
+                buf[..]
+                    .iter()
+                    .position(|&b| b == b'\n')
+                    .ok_or(FrameError::InvalidFrame(String::from(
+                        "frame does not contain any LF",
+                    )))?;
+            // set new LF position
+            lf_position += next_lf_position;
+
+            if buf[lf_position - 1] == b'\r' {
+                break;
+            }
+        }
+    }
+
+    Ok(lf_position)
+}
+
+/// Read an integer from this buffer. It is admitted that the frame identifier character ':' is
+/// not included
+fn read_integer(buf: &[u8]) -> Result<(usize, i64), FrameError> {
+    let int_end = crlr_position(buf)? - 1;
+
+    let int_str = String::from_utf8(buf[..int_end].to_vec())
+        .map_err(|_| FrameError::InvalidFrame(String::from("failed to convert bytes to string")))?;
+
+    let int_result: i64 = int_str
+        .parse()
+        .map_err(|_| FrameError::InvalidFrame(String::from("failed to parse string to integer")))?;
+
+    // next position == int_end + 2
+    Ok((int_end + 2, int_result))
+}
+
 impl Display for Frame {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Frame::Simple(content) => write!(f, "+{}\r\n", content),
-            Frame::Error(content) => write!(f, "-{}\r\n", content),
-            Frame::Integer(content) => write!(f, ":{}\r\n", content),
-            Frame::Bulk(content) => write!(f, "${}\r\n{}\r\n", content.len(), content),
-            Frame::Array(content) => {
-                let mut s = format!("*{}\r\n", content.len());
-                for frame in content {
-                    s.push_str(&frame.to_string());
-                }
-                write!(f, "{}", s)
-            }
-            Frame::Null => write!(f, "_\r\n"),
-            Frame::Boolean(content) => {
-                let encoded_bool = {
-                    if *content {
-                        "t"
-                    } else {
-                        "f"
-                    }
-                };
-                write!(f, "#{}\r\n", encoded_bool)
-            }
-            Frame::Double(content) => write!(f, ",{}\r\n", content),
-        }
+        let frame_as_bytes = encode(self);
+        // we can use unwrap because bytes converted from frame will always
+        // has valid utf8 chars
+        write!(
+            f,
+            "{}",
+            String::from_utf8(frame_as_bytes).unwrap_or("invalid frame".to_string())
+        )
     }
 }
 
@@ -140,26 +245,6 @@ mod tests {
             "_\r\n",
             "Double format does not match"
         );
-
-        // Double
-        assert_eq!(
-            Frame::Double(1.23).to_string(),
-            ",1.23\r\n",
-            "Double format does not match"
-        );
-        assert_eq!(
-            Frame::Double(-1.23).to_string(),
-            ",-1.23\r\n",
-            "Double format does not match"
-        );
-        assert_eq!(
-            Frame::Double(10f64).to_string(),
-            ",10\r\n",
-            "Double format does not match"
-        );
-        //@TODO Do not support exponent for now. To fix
-        // assert_eq!(Frame::Double(1.23e-42).to_string(), ",1.23e-42\r\n", "Double format does not match");
-        // assert_eq!(Frame::Double(1.23E+4).to_string(), ",1.23E+4\r\n", "Double format does not match");
 
         // Array
         let empty_array = Frame::array(); // Beware this is the Frame::Array constructor and not Frame::Array itself

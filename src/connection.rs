@@ -1,6 +1,6 @@
 use crate::frame::Frame;
 use std::io;
-use std::io::{BufRead, Error, ErrorKind, Read, Write};
+use std::io::{BufRead, BufReader, BufWriter, Error, ErrorKind, Read, Write};
 use std::net::TcpStream;
 use std::time::Duration;
 
@@ -11,7 +11,8 @@ const WRITE_TIMEOUT: Option<Duration> = Some(Duration::new(0, 1000));
 /// Represents a connection to the server. It contains the TCPStream returned by the connection
 /// and a read buffer
 struct Connection {
-    stream: io::BufReader<TcpStream>,
+    reader: BufReader<TcpStream>,
+    writer: BufWriter<TcpStream>,
     buffer: Vec<u8>,
 }
 
@@ -20,17 +21,18 @@ impl Connection {
         stream
             .set_write_timeout(WRITE_TIMEOUT)
             .expect("set_write_timeout call failed");
+        // stream_clone is a reference count for stream
+        let stream_clone = stream.try_clone().expect("unable to create connexion");
         Self {
-            stream: io::BufReader::new(stream),
+            reader: BufReader::new(stream),
+            writer: BufWriter::new(stream_clone),
             buffer: Vec::with_capacity(4 * 1024),
         }
     }
 
     /// Writes a frame to the TCP connection underlined stream
     fn write_frame(&mut self, frame: &Frame) -> io::Result<()> {
-        self.stream
-            .get_mut()
-            .write_all(frame.to_string().as_bytes())?;
+        write!(self.writer, "{}", frame)?;
         Ok(())
     }
 
@@ -39,27 +41,32 @@ impl Connection {
         let header_id = self.read_single_byte()?;
 
         let frame = match header_id {
-            b'+' => self.read_integer_frame()?,
+            b':' => {
+                let value_int = self.read_integer()?;
+                Frame::Integer(value_int)
+            }
             _ => Frame::Null,
         };
         Ok(frame)
     }
 
-    /// Read integer frame variant from a connection
-    fn read_integer_frame(&mut self) -> io::Result<Frame> {
+    /// Read integer from a connection
+    fn read_integer(&mut self) -> io::Result<i64> {
         // The next '\r\n' will be the boundary of integer to read
-        let frame_val_str = self.read_until_crlf()?;
+        let val_str = self.read_until_crlf()?;
         // we successfully read the equivalent of an i64 in bytes, let's convert it
-        let frame_val_i64: i64 = frame_val_str.parse().map_err(|_| self.atoi_error())?;
-        // Return the successfully read Integer frame
-        Ok(Frame::Integer(frame_val_i64))
+        let val_i64: i64 = val_str
+            .parse()
+            .map_err(|_| self.parse_string_to_i64_error())?;
+
+        Ok(val_i64)
     }
 
     /// Use to read a single byte. Typically used to read the frame header identifier or the from
     /// termination character.
     fn read_single_byte(&mut self) -> io::Result<u8> {
         let mut buffer = [0; 1];
-        self.stream.read_exact(&mut buffer)?;
+        self.reader.read_exact(&mut buffer)?;
         Ok(buffer[0])
     }
 
@@ -102,13 +109,6 @@ impl Connection {
         self.buffer_to_string()
     }
 
-    // This does not work, to fix
-    fn peek_single_byte(&self) -> io::Result<u8> {
-        let mut buffer = [0u8; 1];
-        self.stream.get_ref().peek(&mut buffer)?;
-        Ok(buffer[0])
-    }
-
     fn reset_read_buffer(&mut self) {
         self.buffer.clear();
     }
@@ -122,21 +122,18 @@ impl Connection {
     }
 
     fn unexpected_eof_error(&self) -> Error {
-        Error::new(ErrorKind::InvalidData, "EOF reached while reading CRLF delimited data")
+        Error::new(
+            ErrorKind::InvalidData,
+            "EOF reached while reading CRLF delimited data",
+        )
     }
 
-    fn atoi_error(&self) -> Error {
+    fn parse_string_to_i64_error(&self) -> Error {
         Error::new(ErrorKind::InvalidData, "failed to parse String to i64")
     }
 
     fn read_until(&mut self, delimiter: u8) -> io::Result<usize> {
-        self.stream.read_until(delimiter, &mut self.buffer)
-    }
-
-    /// Consumes a number_of_bytes bytes from the connection. This is typically used with peak,
-    /// when we need to check some condition before removing the data from the stream.
-    fn consume(&mut self, number_of_bytes: usize) {
-        self.stream.consume(number_of_bytes);
+        self.reader.read_until(delimiter, &mut self.buffer)
     }
 
     fn buffer_to_string(&self) -> io::Result<String> {
@@ -183,5 +180,46 @@ mod tests {
         );
 
         server.join().unwrap();
+    }
+
+    #[test]
+    fn test_read_integer() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let server_addr = listener.local_addr().unwrap();
+
+        let server = thread::spawn(move || {
+            let (mut socket, _) = listener.accept().unwrap();
+            write!(socket, "25\r\n-20\r\n").unwrap();
+        });
+
+        let stream = TcpStream::connect(server_addr).unwrap();
+        let mut conn = Connection::new(stream);
+
+        let resp1 = conn.read_integer().unwrap();
+        let resp2 = conn.read_integer().unwrap();
+
+        assert_eq!(25, resp1);
+        assert_eq!(-20, resp2);
+
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn test_read_frame() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let server_addr = listener.local_addr().unwrap();
+
+        let stream = TcpStream::connect(server_addr).unwrap();
+        let mut conn = Connection::new(stream);
+
+        let _ = conn.write_frame(&Frame::Integer(25));
+        let _ = conn.write_frame(&Frame::Integer(-25));
+        //
+        let resp1 = conn.read_frame().unwrap();
+        // let resp2 = conn.read_frame().unwrap();
+        // println!("{}", resp1);
+
+        //        assert_eq!(25, resp1);
+        //        assert_eq!(-20, resp2);
     }
 }
