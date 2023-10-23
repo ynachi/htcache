@@ -17,7 +17,7 @@ pub(crate) enum Frame {
 
 impl Frame {
     /// Returns an empty array of frames
-    pub(crate) fn array() -> Frame {
+    fn array() -> Frame {
         Frame::Array(vec![])
     }
 
@@ -141,11 +141,12 @@ fn crlr_position(buf: &[u8]) -> Result<usize, FrameError> {
         // No CRLF found, search for next CRLF or reach the end of the buffer
         loop {
             let next_lf_position =
-                buf[..]
+                // start searching from the previous position
+                buf[lf_position+1..]
                     .iter()
                     .position(|&b| b == b'\n')
                     .ok_or(FrameError::InvalidFrame(String::from(
-                        "frame does not contain any LF",
+                        "frame does not contain any CRLF",
                     )))?;
             // set new LF position
             lf_position += next_lf_position;
@@ -290,5 +291,39 @@ mod tests {
             "*5\r\n:1\r\n:2\r\n:3\r\n:4\r\n$5\r\nhello\r\n",
             "Array of mixed types format does not match"
         );
+    }
+
+    #[test]
+    fn test_read_integer() {
+
+        // read integer success
+        let buf: &[_] = b"1234\r\n";
+        let res = read_integer(buf).unwrap();
+        assert_eq!(res, (6, 1234));
+
+        // read a negative integer
+        let buf: &[_] = b"-9876\r\n";
+        let res = read_integer(buf).unwrap();
+        assert_eq!(res, (7, -9876));
+
+        // read integer with no crlr
+        let buf: &[_] = b"1234";
+        let res = read_integer(buf);
+        assert!(res.is_err());
+
+        // read invalid utf8
+        let buf: &[u8] = &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+        let res = read_integer(buf);
+        assert!(res.is_err());
+
+        // read non-numeric
+        let buf: &[_] = b"abc\r\n";
+        let res = read_integer(buf);
+        assert!(res.is_err());
+
+        // read empty integer
+        let buf: &[_] = b"\r\n";
+        let res = read_integer(buf);
+        assert!(res.is_err());
     }
 }
