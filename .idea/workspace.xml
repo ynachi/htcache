@@ -73,7 +73,7 @@
     <option name="runOnTheFly" value="true" />
     <option name="tool" value="Clippy" />
   </component>
-  <component name="RunManager" selected="Cargo.Test frame::tests::test_read_integer">
+  <component name="RunManager" selected="Cargo.Test frame::tests::test_crlr_position">
     <configuration name="Test connection::tests::test_read_integer" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="command" value="test --package redisy --lib connection::tests::test_read_integer -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -91,8 +91,8 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test connection::tests::test_read_until_crlf" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package redisy --lib connection::tests::test_read_until_crlf -- --exact" />
+    <configuration name="Test frame::tests" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package redisy --lib frame::tests" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <option name="emulateTerminal" value="true" />
       <option name="channel" value="DEFAULT" />
@@ -108,8 +108,8 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test frame::tests" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package redisy --lib frame::tests" />
+    <configuration name="Test frame::tests::test_crlr_position" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package redisy --lib frame::tests::test_crlr_position -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <option name="emulateTerminal" value="true" />
       <option name="channel" value="DEFAULT" />
@@ -161,11 +161,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Cargo.Test frame::tests::test_crlr_position" />
         <item itemvalue="Cargo.Test frame::tests::test_read_integer" />
         <item itemvalue="Cargo.Test frame::tests" />
         <item itemvalue="Cargo.Test frame::tests::test_frame_fmt" />
         <item itemvalue="Cargo.Test connection::tests::test_read_integer" />
-        <item itemvalue="Cargo.Test connection::tests::test_read_until_crlf" />
       </list>
     </recent_temporary>
   </component>
@@ -186,7 +186,7 @@
       <workItem from="1697741420583" duration="29000" />
       <workItem from="1697741454023" duration="416000" />
       <workItem from="1697742443306" duration="37025000" />
-      <workItem from="1698086709794" duration="3002000" />
+      <workItem from="1698086709794" duration="6003000" />
     </task>
     <servers />
   </component>

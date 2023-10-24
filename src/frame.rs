@@ -148,8 +148,9 @@ fn crlr_position(buf: &[u8]) -> Result<usize, FrameError> {
                     .ok_or(FrameError::InvalidFrame(String::from(
                         "frame does not contain any CRLF",
                     )))?;
-            // set new LF position
-            lf_position += next_lf_position;
+            // set new LF position. +1 because iterators start counting from 0 so need to add
+            // 1 to catch the position in the original buffer
+            lf_position += next_lf_position + 1;
 
             if buf[lf_position - 1] == b'\r' {
                 break;
@@ -291,6 +292,46 @@ mod tests {
             "*5\r\n:1\r\n:2\r\n:3\r\n:4\r\n$5\r\nhello\r\n",
             "Array of mixed types format does not match"
         );
+    }
+
+    #[test]
+    fn test_crlr_position() {
+
+        assert_eq!(crlr_position(b"Hello Word\nHello\r\nWorld").unwrap(),17);
+
+        assert_eq!(crlr_position(b"Hello\r\n").unwrap(), 6);
+        assert_eq!(crlr_position(b"Hello World\r\n").unwrap(), 12);
+        assert_eq!(crlr_position(b"Hello Word\r\nHello\r\nWorld").unwrap(),11);
+        // assert_eq!(crlr_position(b"Hello Word\nHello\r\nWorld").unwrap(),18);
+        assert_eq!(crlr_position(b"Hello Word\rHello\r\nWorld").unwrap(),17);
+
+        // not enough data error
+        let result = crlr_position(b"\r\nHello");
+        match result {
+            Err(FrameError::InvalidFrame(message)) => assert_eq!(message, "buffer does not contain enough data"),
+            _ => panic!("Expected an Err FrameError"),
+        }
+
+        // bytes contains LF only
+        let result = crlr_position(b"Hello\n");
+        match result {
+            Err(FrameError::InvalidFrame(message)) => assert_eq!(message, "frame does not contain any CRLF"),
+            _ => panic!("Expected an Err FrameError"),
+        }
+
+        // no data
+        let result = crlr_position(b"");
+        match result {
+            Err(FrameError::InvalidFrame(message)) => assert_eq!(message, "frame does not contain any LF"),
+            _ => panic!("Expected an Err FrameError"),
+        }
+
+        // single byte
+        let result = crlr_position(b"H");
+        match result {
+            Err(FrameError::InvalidFrame(message)) => assert_eq!(message, "frame does not contain any LF"),
+            _ => panic!("Expected an Err FrameError"),
+        }
     }
 
     #[test]
