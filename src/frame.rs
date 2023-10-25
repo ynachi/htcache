@@ -122,6 +122,7 @@ pub(crate) fn decode(buf: &[u8]) -> Result<(usize, Frame), FrameError> {
 /// Finds and return the position of the next CRLR in the buffer. Returns an invalid frame
 /// error if it cannot be found. The position returned includes the CRLR chars.
 fn crlr_position(buf: &[u8]) -> Result<usize, FrameError> {
+    //@TODO: manage empty entry, example "\r\n"
     let mut lf_position =
         buf[..]
             .iter()
@@ -130,14 +131,14 @@ fn crlr_position(buf: &[u8]) -> Result<usize, FrameError> {
                 "frame does not contain any LF",
             )))?;
 
-    if lf_position < 2 {
+    if lf_position < 2 && buf.len() < 2 {
         return Err(FrameError::InvalidFrame(String::from(
             "buffer does not contain enough data",
         )));
     }
 
     // If CR not preceding LF, we are not at the boundary of a frame, so keep looking
-    if buf[lf_position - 1] != b'\r' {
+    if lf_position <1 || buf[lf_position - 1] != b'\r' {
         // No CRLF found, search for next CRLF or reach the end of the buffer
         loop {
             let next_lf_position =
@@ -297,16 +298,22 @@ mod tests {
     #[test]
     fn test_crlr_position() {
 
+        assert_eq!(crlr_position(b"Hello\r\n").unwrap(), 6);
+        assert_eq!(crlr_position(b"\r\nHello\r\n").unwrap(), 1);
+        assert_eq!(crlr_position(b"Hello World\r\n").unwrap(), 12);
+        assert_eq!(crlr_position(b"Hello Word\nHello\r\nWorld").unwrap(),17);
+        assert_eq!(crlr_position(b"Hello Word\rHello\r\nWorld").unwrap(),17);
         assert_eq!(crlr_position(b"Hello Word\nHello\r\nWorld").unwrap(),17);
 
-        assert_eq!(crlr_position(b"Hello\r\n").unwrap(), 6);
-        assert_eq!(crlr_position(b"Hello World\r\n").unwrap(), 12);
-        assert_eq!(crlr_position(b"Hello Word\r\nHello\r\nWorld").unwrap(),11);
-        // assert_eq!(crlr_position(b"Hello Word\nHello\r\nWorld").unwrap(),18);
-        assert_eq!(crlr_position(b"Hello Word\rHello\r\nWorld").unwrap(),17);
+        // read twice from the same buffer
+        let buf: &[_] = b"Hello Word\r\nHello\r\nWorld";
+        let position = crlr_position(buf).unwrap();
+        assert_eq!(position, 11);
+          // reading again from position is success
+        assert_eq!(crlr_position(&buf[position+1..]).unwrap(),6);
 
         // not enough data error
-        let result = crlr_position(b"\r\nHello");
+        let result = crlr_position(b"\n");
         match result {
             Err(FrameError::InvalidFrame(message)) => assert_eq!(message, "buffer does not contain enough data"),
             _ => panic!("Expected an Err FrameError"),
