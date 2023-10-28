@@ -73,7 +73,7 @@
     <option name="runOnTheFly" value="true" />
     <option name="tool" value="Clippy" />
   </component>
-  <component name="RunManager" selected="Cargo.Test frame::tests::test_crlr_position">
+  <component name="RunManager" selected="Cargo.Test frame::tests::test_read_integer">
     <configuration name="Test connection::tests::test_read_integer" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="command" value="test --package redisy --lib connection::tests::test_read_integer -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -161,10 +161,10 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Cargo.Test frame::tests::test_read_integer" />
         <item itemvalue="Cargo.Test frame::tests::test_crlr_position" />
         <item itemvalue="Cargo.Test frame::tests" />
         <item itemvalue="Cargo.Test frame::tests::test_frame_fmt" />
-        <item itemvalue="Cargo.Test frame::tests::test_read_integer" />
         <item itemvalue="Cargo.Test connection::tests::test_read_integer" />
       </list>
     </recent_temporary>
@@ -186,7 +186,7 @@
       <workItem from="1697741420583" duration="29000" />
       <workItem from="1697741454023" duration="416000" />
       <workItem from="1697742443306" duration="37025000" />
-      <workItem from="1698086709794" duration="9171000" />
+      <workItem from="1698086709794" duration="12921000" />
     </task>
     <servers />
   </component>
@@ -198,7 +198,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/frame.rs</url>
-          <line>125</line>
+          <line>132</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>

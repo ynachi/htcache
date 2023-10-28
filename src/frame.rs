@@ -107,13 +107,20 @@ pub(crate) fn encode(frame: &Frame) -> Vec<u8> {
 pub(crate) fn decode(buf: &[u8]) -> Result<(usize, Frame), FrameError> {
     match buf[0] {
         b':' => {
-            // let int = read_int(position, buf)?;
-            // next position = position + bytes read
-            // return
-            // to convert to int
-            // read in a [u8;8], then convert
-            let (next_position, int_value) = read_integer(buf)?;
-            Ok((next_position, Frame::Integer(int_value)))
+            let (next_position, frame_content) = read_integer(buf)?;
+            Ok((next_position, Frame::Integer(frame_content)))
+        }
+        b'+' => {
+            let (next_position, frame_content) = read_simple_string(buf)?;
+            Ok((next_position, Frame::Simple(frame_content)))
+        }
+        b'-' => {
+            // Error frame type is a simple string, so we can read_simple_string
+            let (next_position, frame_content) = read_simple_string(buf)?;
+            Ok((next_position, Frame::Error(frame_content)))
+        }
+        b'$' => {
+            // create read bulk method
         }
         _ => unimplemented!(),
     }
@@ -176,6 +183,16 @@ fn read_integer(buf: &[u8]) -> Result<(usize, i64), FrameError> {
 
     // next position == int_end + 2
     Ok((int_end + 2, int_result))
+}
+
+fn read_simple_string(buf: &[u8]) -> Result<(usize, String), FrameError> {
+    let int_end = crlr_position(buf)? - 1;
+
+    let frame_content = String::from_utf8(buf[..int_end].to_vec())
+        .map_err(|_| FrameError::InvalidFrame(String::from("failed to convert bytes to string")))?;
+
+    // next position == int_end + 2
+    Ok((int_end + 2, frame_content))
 }
 
 impl Display for Frame {
@@ -366,6 +383,11 @@ mod tests {
 
         // read non-numeric
         let buf: &[_] = b"abc\r\n";
+        let res = read_integer(buf);
+        assert!(res.is_err());
+
+        // read empty
+        let buf: &[_] = b"\r\n";
         let res = read_integer(buf);
         assert!(res.is_err());
 
