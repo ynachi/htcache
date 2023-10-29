@@ -98,8 +98,9 @@ impl ThreadPool {
     /// ```
     pub fn shutdown(&mut self) {
         for _ in 0..self.size {
-            // @TODO Manage error
-            self.sender.send(Message::Shutdown).unwrap();
+            if let Err(e) = self.sender.send(Message::Shutdown) {
+                println!("error sending Shutdown command: {}", e);
+            }
         }
         for worker in &mut self.workers {
             if let Some(thread) = worker.thread.take() {
