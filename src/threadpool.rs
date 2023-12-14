@@ -77,7 +77,7 @@ impl ThreadPool {
         let job = Message::Task(Box::new(f));
         match self.sender.send(job) {
             Ok(_) => {}
-            Err(e) => println!("fail sending job to worker: {}", e),
+            Err(e) => eprintln!("fail sending job to worker: {}", e),
         };
     }
 
@@ -99,7 +99,7 @@ impl ThreadPool {
     pub fn shutdown(&mut self) {
         for _ in 0..self.size {
             if let Err(e) = self.sender.send(Message::Shutdown) {
-                println!("error sending Shutdown command: {}", e);
+                eprintln!("error sending Shutdown command: {}", e);
             }
         }
         for worker in &mut self.workers {
@@ -117,11 +117,11 @@ impl ThreadPool {
 }
 
 impl Drop for ThreadPool {
-    /// If a ThreadPool goes out of scope, it would drop the channel sender end. Dropping this end
-    /// will cause the connection to drop so some jobs might not reach execution. The programmer is
-    /// suppose to call the `shutdown` method by himself but in case he does not, the drop method
-    /// would hold his back by joining the threads. Doing so will allow all the jobs to finish and
-    /// the threads to gracefully exit.
+    /// If a ThreadPool goes out of scope, it would drop the channel at the sender end.
+    /// Dropping at this end will cause the connection to drop so some jobs might not reach execution.
+    /// The programmer is suppose to call the `shutdown` method by himself but in case he does not, the drop method
+    /// would hold his back by joining the threads.
+    /// Doing so will allow all the jobs to finish and the threads to gracefully exit.
     fn drop(&mut self) {
         self.shutdown();
     }
@@ -145,8 +145,6 @@ impl Worker {
     ///
     /// An `Option` containing a `Worker` if the thread was successfully created, or `None` if the OS failed to create the thread.
     fn new(id: usize, receiver: SharedReceiver) -> io::Result<Worker> {
-        // @TODO, this will panic if the OS cannot create a thread for some reasons.
-        // fix it using thread builder
         let builder = thread::Builder::new();
 
         let thread = builder.spawn(move || {
@@ -167,7 +165,7 @@ impl Worker {
                     }
                     Message::Error(e) => {
                         // @TODO Manage logging
-                        println!("job read error occurred from worker {}: {}", id, e);
+                        eprintln!("job read error occurred from worker {}: {}", id, e);
                     }
                 }
             }
@@ -195,10 +193,8 @@ impl SharedReceiver {
     fn get_message(&self) -> Message {
         let mutex_guard = self.receiver.lock();
         match mutex_guard {
-            Ok(mutex_guard) => match mutex_guard.recv() {
-                Ok(message) => message,
-                Err(e) => Message::Error(e.to_string()),
-            },
+            Ok(mutex_guard) =>
+                mutex_guard.recv().unwrap_or_else(|e| Message::Error(e.to_string())),
             Err(e) => Message::Error(e.to_string()),
         }
     }
@@ -236,8 +232,8 @@ enum Message {
     Shutdown,
     /// `Job` represents a job to be executed by a worker
     Task(Job),
-    /// Failing to read messages from the shared should not error. This is why we define an Error
-    /// message variant which will be shared to the thread in case we get a channel receive error
-    /// or a mutex lock error (poisoned or blocking).
+    /// Failing to read messages from the shared channel should not error.
+    /// This is why we define an Error message variant which will be shared to the thread in case we get a channel
+    /// receive error or a mutex lock error (poisoned or blocking).
     Error(String),
 }

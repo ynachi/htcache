@@ -37,39 +37,29 @@ impl Frame {
 
 /// Turns a Frame into a slice of bytes, ready to be transferred though a network
 pub(crate) fn encode(frame: &Frame) -> Vec<u8> {
+
     match frame {
         Frame::Simple(content) => {
-            let mut bytes = vec![b'+'];
-            bytes.extend(content.as_bytes());
-            bytes.extend(b"\r\n");
-            bytes
+            let formatted_content = format!("+{}\r\n", content);
+            formatted_content.as_bytes().to_vec()
         }
 
         Frame::Error(content) => {
-            let mut bytes = vec![b'-'];
-            bytes.extend(content.as_bytes());
-            bytes.extend(b"\r\n");
-            bytes
+            let formatted_content = format!("-{}\r\n", content);
+            formatted_content.as_bytes().to_vec()
         }
 
         Frame::Integer(content) => {
-            let mut bytes = vec![b':'];
-            bytes.extend(content.to_string().as_bytes());
-            bytes.extend(b"\r\n");
-            bytes
+            let formatted_content = format!(":{}\r\n", content);
+            formatted_content.as_bytes().to_vec()
         }
 
         Frame::Bulk(content) => {
-            let mut bytes = vec![b'$'];
-            bytes.extend(content.len().to_string().as_bytes());
-            bytes.extend(b"\r\n");
-            bytes.extend(content.as_bytes());
-            bytes.extend(b"\r\n");
-            bytes
+            let formatted_content = format!("${}\r\n{}\r\n", content.len(), content);
+            formatted_content.as_bytes().to_vec()
         }
 
         Frame::Boolean(content) => {
-            let mut bytes = vec![b'#'];
             let shortened_bool = {
                 if *content {
                     "t"
@@ -77,15 +67,13 @@ pub(crate) fn encode(frame: &Frame) -> Vec<u8> {
                     "f"
                 }
             };
-            bytes.extend(shortened_bool.as_bytes());
-            bytes.extend(b"\r\n");
-            bytes
+            let formatted_content = format!("#{}\r\n", shortened_bool);
+            formatted_content.as_bytes().to_vec()
         }
 
         Frame::Null => {
-            let mut bytes = vec![b'_'];
-            bytes.extend(b"\r\n");
-            bytes
+            let formatted_content = "_\r\n".to_string();
+            formatted_content.as_bytes().to_vec()
         }
 
         Frame::Array(frames) => {
@@ -119,15 +107,16 @@ pub(crate) fn decode(buf: &[u8]) -> Result<(usize, Frame), FrameError> {
             let (next_position, frame_content) = read_simple_string(buf)?;
             Ok((next_position, Frame::Error(frame_content)))
         }
-        b'$' => {
-            // create read bulk method
-        }
+        // b'$' => {
+        //     // create read bulk method
+        // }
         _ => unimplemented!(),
     }
 }
 
-/// Finds and return the position of the next CRLR in the buffer. Returns an invalid frame
-/// error if it cannot be found. The position returned includes the CRLR chars.
+/// Finds and return the position of the next CRLF in the buffer.
+/// Returns an invalid frame error if it cannot be found.
+/// The position returned includes the CRLF chars.
 fn crlr_position(buf: &[u8]) -> Result<usize, FrameError> {
     //@TODO: manage empty entry, example "\r\n"
     let mut lf_position =
