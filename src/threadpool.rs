@@ -193,8 +193,9 @@ impl SharedReceiver {
     fn get_message(&self) -> Message {
         let mutex_guard = self.receiver.lock();
         match mutex_guard {
-            Ok(mutex_guard) =>
-                mutex_guard.recv().unwrap_or_else(|e| Message::Error(e.to_string())),
+            Ok(mutex_guard) => mutex_guard
+                .recv()
+                .unwrap_or_else(|e| Message::Error(e.to_string())),
             Err(e) => Message::Error(e.to_string()),
         }
     }

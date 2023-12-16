@@ -1,21 +1,24 @@
 use std::fmt::{Debug, Display, Formatter, Result};
 use std::io;
+use std::string::FromUtf8Error;
 
 #[derive(Debug)]
 pub(crate) enum FrameError {
+    EOF,
     Encoding(io::Error),
-    Decoding(io::Error),
-    InvalidFrame(String),
-    InvalidType(String),
+    InvalidFrame,
+    InvalidType,
+    InvalidUTF8(FromUtf8Error),
 }
 
 impl Display for FrameError {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             FrameError::Encoding(err) => write!(f, "error encoding RESP frame: {}", err),
-            FrameError::Decoding(err) => write!(f, "error decoding RESP frame: {}", err),
-            FrameError::InvalidFrame(msg) => write!(f, "invalid RESP frame: {}", msg),
-            FrameError::InvalidType(msg) => write!(f, "invalid RESP type: {}", msg),
+            FrameError::InvalidFrame => write!(f, "RESP frame is malformed"),
+            FrameError::InvalidType => write!(f, "wrong RESP frame type, needed another type here"),
+            FrameError::EOF => write!(f, "file reached EOF"),
+            FrameError::InvalidUTF8(err) => write!(f, "cannot convert bytes to string: {}", err),
         }
     }
 }

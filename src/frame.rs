@@ -3,6 +3,10 @@
 
 use crate::error::FrameError;
 use std::fmt::{Display, Formatter};
+use std::io;
+use std::io::{BufRead, BufReader, Read};
+
+const MAX_ITEM_SIZE: usize = 4 * 1024;
 
 #[derive(Debug, Eq, PartialEq)]
 pub(crate) enum Frame {
@@ -16,177 +20,243 @@ pub(crate) enum Frame {
 }
 
 impl Frame {
-    /// Returns an empty array of frames
+    /// array returns an empty array of frames
     fn array() -> Frame {
         Frame::Array(vec![])
     }
 
-    /// Push frames to an a frame array variant
+    /// push_back push frames to an a frame array variant
     pub(crate) fn push_back(&mut self, frame: Frame) -> Result<(), FrameError> {
         match self {
             Frame::Array(frames) => {
                 frames.push(frame);
                 Ok(())
             }
-            _ => Err(FrameError::InvalidType(String::from(
-                "can only push frames to vector variant frame",
-            ))),
+            _ => Err(FrameError::InvalidType),
         }
     }
-}
 
-/// Turns a Frame into a slice of bytes, ready to be transferred though a network
-pub(crate) fn encode(frame: &Frame) -> Vec<u8> {
+    /// encode turns a Frame into a slice of bytes, ready to be transferred though a network
+    pub(crate) fn encode(&self) -> Vec<u8> {
+        match self {
+            Frame::Simple(content) => {
+                let formatted_content = format!("+{}\r\n", content);
+                formatted_content.as_bytes().to_vec()
+            }
 
-    match frame {
-        Frame::Simple(content) => {
-            let formatted_content = format!("+{}\r\n", content);
-            formatted_content.as_bytes().to_vec()
-        }
+            Frame::Error(content) => {
+                let formatted_content = format!("-{}\r\n", content);
+                formatted_content.as_bytes().to_vec()
+            }
 
-        Frame::Error(content) => {
-            let formatted_content = format!("-{}\r\n", content);
-            formatted_content.as_bytes().to_vec()
-        }
+            Frame::Integer(content) => {
+                let formatted_content = format!(":{}\r\n", content);
+                formatted_content.as_bytes().to_vec()
+            }
 
-        Frame::Integer(content) => {
-            let formatted_content = format!(":{}\r\n", content);
-            formatted_content.as_bytes().to_vec()
-        }
+            Frame::Bulk(content) => {
+                let formatted_content = format!("${}\r\n{}\r\n", content.len(), content);
+                formatted_content.as_bytes().to_vec()
+            }
 
-        Frame::Bulk(content) => {
-            let formatted_content = format!("${}\r\n{}\r\n", content.len(), content);
-            formatted_content.as_bytes().to_vec()
-        }
+            Frame::Boolean(content) => {
+                let shortened_bool = {
+                    if *content {
+                        "t"
+                    } else {
+                        "f"
+                    }
+                };
+                let formatted_content = format!("#{}\r\n", shortened_bool);
+                formatted_content.as_bytes().to_vec()
+            }
 
-        Frame::Boolean(content) => {
-            let shortened_bool = {
-                if *content {
-                    "t"
-                } else {
-                    "f"
+            Frame::Null => {
+                let formatted_content = "_\r\n".to_string();
+                formatted_content.as_bytes().to_vec()
+            }
+
+            Frame::Array(frames) => {
+                let mut bytes = vec![b'*'];
+                bytes.extend(frames.len().to_string().as_bytes());
+                bytes.extend(b"\r\n");
+                for f in frames {
+                    bytes.extend(f.encode());
                 }
-            };
-            let formatted_content = format!("#{}\r\n", shortened_bool);
-            formatted_content.as_bytes().to_vec()
-        }
-
-        Frame::Null => {
-            let formatted_content = "_\r\n".to_string();
-            formatted_content.as_bytes().to_vec()
-        }
-
-        Frame::Array(frames) => {
-            let mut bytes = vec![b'*'];
-            bytes.extend(frames.len().to_string().as_bytes());
-            bytes.extend(b"\r\n");
-            for f in frames {
-                bytes.extend(encode(f));
+                bytes
             }
-            bytes
         }
+    }
+
+    /// write_to writes a frame to a writer
+    pub(crate) fn write_to<T: io::Write>(&self, w: &mut T) -> Result<(), io::Error> {
+        let bytes = self.encode();
+        w.write_all(bytes.as_slice())?;
+        w.flush()?;
+        Ok(())
     }
 }
 
-/// buf could contain a series of frames read from a stream. Decode read a frame
-/// from this buffer and return it and cursor position in the buffer to read the next
-/// frame. If it encounters an invalid frame, it still return the next position
-/// from which another frame can be read. This means invalid data will be lost
-pub(crate) fn decode(buf: &[u8]) -> Result<(usize, Frame), FrameError> {
-    match buf[0] {
-        b':' => {
-            let (next_position, frame_content) = read_integer(buf)?;
-            Ok((next_position, Frame::Integer(frame_content)))
-        }
+/// decode attempt to read a frame a reader.
+/// It first identify the frame type and decode it accordingly.
+/// Bytes read are lost if an error occurs.
+/// Errors are generally malformed frames.
+pub(crate) fn decode(rd: &mut BufReader<impl Read>) -> Result<Frame, FrameError> {
+    let tag = read_single_byte(rd)?;
+    match tag {
+        // Simple String
         b'+' => {
-            let (next_position, frame_content) = read_simple_string(buf)?;
-            Ok((next_position, Frame::Simple(frame_content)))
+            let content = read_simple_string(rd)?;
+            Ok(Frame::Simple(content))
         }
+        // Error
         b'-' => {
-            // Error frame type is a simple string, so we can read_simple_string
-            let (next_position, frame_content) = read_simple_string(buf)?;
-            Ok((next_position, Frame::Error(frame_content)))
+            let content = read_simple_string(rd)?;
+            Ok(Frame::Error(content))
         }
-        // b'$' => {
-        //     // create read bulk method
-        // }
-        _ => unimplemented!(),
-    }
-}
-
-/// Finds and return the position of the next CRLF in the buffer.
-/// Returns an invalid frame error if it cannot be found.
-/// The position returned includes the CRLF chars.
-fn crlr_position(buf: &[u8]) -> Result<usize, FrameError> {
-    //@TODO: manage empty entry, example "\r\n"
-    let mut lf_position =
-        buf[..]
-            .iter()
-            .position(|&b| b == b'\n')
-            .ok_or(FrameError::InvalidFrame(String::from(
-                "frame does not contain any LF",
-            )))?;
-
-    if lf_position < 2 && buf.len() < 2 {
-        return Err(FrameError::InvalidFrame(String::from(
-            "buffer does not contain enough data",
-        )));
-    }
-
-    // If CR not preceding LF, we are not at the boundary of a frame, so keep looking
-    if lf_position <1 || buf[lf_position - 1] != b'\r' {
-        // No CRLF found, search for next CRLF or reach the end of the buffer
-        loop {
-            let next_lf_position =
-                // start searching from the previous position
-                buf[lf_position+1..]
-                    .iter()
-                    .position(|&b| b == b'\n')
-                    .ok_or(FrameError::InvalidFrame(String::from(
-                        "frame does not contain any CRLF",
-                    )))?;
-            // set new LF position. +1 because iterators start counting from 0 so need to add
-            // 1 to catch the position in the original buffer
-            lf_position += next_lf_position + 1;
-
-            if buf[lf_position - 1] == b'\r' {
-                break;
+        // Integer
+        b':' => {
+            let content_string = read_simple_string(rd)?;
+            let content = content_string
+                .parse()
+                .map_err(|_| FrameError::InvalidFrame)?;
+            Ok(Frame::Integer(content))
+        }
+        // Bulk
+        b'$' => {
+            let content = read_bulk_string(rd)?;
+            Ok(Frame::Bulk(content))
+        }
+        // Bool
+        b'#' => {
+            let content = read_simple_string(rd)?;
+            if content == *"t" {
+                Ok(Frame::Boolean(true))
+            } else if content == *"f" {
+                Ok(Frame::Boolean(false))
+            } else {
+                Err(FrameError::InvalidFrame)
             }
         }
+        // Nil frame
+        b'_' => {
+            let content = read_simple_string(rd)?;
+            if content == *"" {
+                Ok(Frame::Null)
+            } else {
+                Err(FrameError::InvalidFrame)
+            }
+        }
+        // Array
+        b'*' => decode_array(rd),
+        _ => Err(FrameError::InvalidType),
+    }
+}
+
+/// read_single_byte try to read a single byte from the reader.
+/// It is typically used to get the frame tag.
+fn read_single_byte(rd: &mut BufReader<impl Read>) -> Result<u8, FrameError> {
+    let mut buffer = [0; 1];
+    let size = rd.read(&mut buffer)?;
+    if size == 0 {
+        return Err(FrameError::EOF);
+    }
+    Ok(buffer[0])
+}
+
+/// string_from reads a simple string from a reader.
+fn read_simple_string(rd: &mut BufReader<impl Read>) -> Result<String, FrameError> {
+    let bytes = read_until_crlf_simple(rd)?;
+    let content = String::from_utf8(bytes).map_err(FrameError::InvalidUTF8)?;
+    Ok(content)
+}
+
+// read_until_crlf_simple reads a simple vector of u8 from a reader until CRLF.
+// A simple vector is a vector which does not contain any CR, LF or CRLF in the middle.
+// So it is considered to be an error to find such in the middle.
+fn read_until_crlf_simple(rd: &mut BufReader<impl Read>) -> Result<Vec<u8>, FrameError> {
+    let mut buff: Vec<u8> = Vec::with_capacity(MAX_ITEM_SIZE);
+    let num_bytes = rd.read_until(b'\n', &mut buff)?;
+
+    validate_simple_buff(&buff, num_bytes)?;
+
+    buff.truncate(buff.len() - 2);
+
+    Ok(buff)
+}
+
+fn validate_simple_buff(buff: &Vec<u8>, num_bytes: usize) -> Result<(), FrameError> {
+    // This is EOF, returns a different error for it
+    if num_bytes == 0 {
+        return Err(FrameError::EOF);
+    }
+    if num_bytes < 2 || buff[buff.len() - 2] != b'\r' || buff[..buff.len() - 2].contains(&b'\r') {
+        return Err(FrameError::InvalidFrame);
+    }
+    Ok(())
+}
+
+/// read_bulk_string_from_reader reads a bulk string from a reader.
+fn read_bulk_string(rd: &mut BufReader<impl Read>) -> Result<String, FrameError> {
+    let bytes = read_until_crlf_bulk(rd)?;
+    let content = String::from_utf8(bytes).map_err(FrameError::InvalidUTF8)?;
+    Ok(content)
+}
+
+// read_until_crlf_bulk reads a non simple string from the reader.
+// This type of strings can contain CR or LF in them.
+fn read_until_crlf_bulk(rd: &mut BufReader<impl Read>) -> Result<Vec<u8>, FrameError> {
+    // Read the size first
+    let frame_size = read_simple_string(rd)?;
+    let frame_size = frame_size.parse().map_err(|_| FrameError::InvalidFrame)?;
+
+    // now read the number of relevant bytes + CRLF
+    // reminder: bulk frame is like $<length>\r\n<data>\r\n where length == len(data)
+    let mut buff = vec![0; frame_size + 2];
+    let read_size = rd.read(&mut buff)?;
+    validate_bulk_buff(&buff, read_size, frame_size)?;
+
+    buff.truncate(buff.len() - 2);
+
+    Ok(buff)
+}
+
+/// validate_bulk_buff checks if a bulk string read from a buffer is valid
+fn validate_bulk_buff(
+    buff: &Vec<u8>,
+    read_size: usize,
+    frame_size: usize,
+) -> Result<(), FrameError> {
+    // This is EOF, returns a different error for it
+    if read_size == 0 {
+        return Err(FrameError::EOF);
+    }
+    if read_size != frame_size + 2 || buff[buff.len() - 2] != b'\r' {
+        return Err(FrameError::InvalidFrame);
+    }
+    Ok(())
+}
+
+/// decode_array decodes a frame Array from a reader.
+/// The tag identifying the frame is considered to be already read.
+fn decode_array(rd: &mut BufReader<impl Read>) -> Result<Frame, FrameError> {
+    // Read the length first
+    let array_length = read_simple_string(rd)?;
+    let array_length = array_length.parse().map_err(|_| FrameError::InvalidFrame)?;
+
+    let mut arr = Frame::array();
+
+    for _ in 0..array_length {
+        let fr = decode(rd)?;
+        arr.push_back(fr)?;
     }
 
-    Ok(lf_position)
-}
-
-/// Read an integer from this buffer. It is admitted that the frame identifier character ':' is
-/// not included
-fn read_integer(buf: &[u8]) -> Result<(usize, i64), FrameError> {
-    let int_end = crlr_position(buf)? - 1;
-
-    let int_str = String::from_utf8(buf[..int_end].to_vec())
-        .map_err(|_| FrameError::InvalidFrame(String::from("failed to convert bytes to string")))?;
-
-    let int_result: i64 = int_str
-        .parse()
-        .map_err(|_| FrameError::InvalidFrame(String::from("failed to parse string to integer")))?;
-
-    // next position == int_end + 2
-    Ok((int_end + 2, int_result))
-}
-
-fn read_simple_string(buf: &[u8]) -> Result<(usize, String), FrameError> {
-    let int_end = crlr_position(buf)? - 1;
-
-    let frame_content = String::from_utf8(buf[..int_end].to_vec())
-        .map_err(|_| FrameError::InvalidFrame(String::from("failed to convert bytes to string")))?;
-
-    // next position == int_end + 2
-    Ok((int_end + 2, frame_content))
+    Ok(arr)
 }
 
 impl Display for Frame {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let frame_as_bytes = encode(self);
+        let frame_as_bytes = self.encode();
         // we can use unwrap because bytes converted from frame will always
         // has valid utf8 chars
         write!(
@@ -200,6 +270,7 @@ impl Display for Frame {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io;
 
     #[test]
     fn test_frame_fmt() {
@@ -302,87 +373,177 @@ mod tests {
     }
 
     #[test]
-    fn test_crlr_position() {
-
-        assert_eq!(crlr_position(b"Hello\r\n").unwrap(), 6);
-        assert_eq!(crlr_position(b"\r\nHello\r\n").unwrap(), 1);
-        assert_eq!(crlr_position(b"Hello World\r\n").unwrap(), 12);
-        assert_eq!(crlr_position(b"Hello Word\nHello\r\nWorld").unwrap(),17);
-        assert_eq!(crlr_position(b"Hello Word\rHello\r\nWorld").unwrap(),17);
-        assert_eq!(crlr_position(b"Hello Word\nHello\r\nWorld").unwrap(),17);
-
-        // read twice from the same buffer
-        let buf: &[_] = b"Hello Word\r\nHello\r\nWorld";
-        let position = crlr_position(buf).unwrap();
-        assert_eq!(position, 11);
-          // reading again from position is success
-        assert_eq!(crlr_position(&buf[position+1..]).unwrap(),6);
-
-        // not enough data error
-        let result = crlr_position(b"\n");
-        match result {
-            Err(FrameError::InvalidFrame(message)) => assert_eq!(message, "buffer does not contain enough data"),
+    fn test_read_until_crlf_simple() {
+        let cursor = io::Cursor::new(b"Hello\r\nHello World\r\nWord\nHello");
+        let mut rd = BufReader::new(cursor);
+        // can read word word
+        let got = read_until_crlf_simple(&mut rd).unwrap();
+        assert_eq!(got, b"Hello");
+        // can read a string of multiple words
+        let got = read_until_crlf_simple(&mut rd).unwrap();
+        assert_eq!(got, b"Hello World");
+        // CR in the middle
+        let got = read_until_crlf_simple(&mut rd);
+        match got {
+            Err(FrameError::InvalidFrame) => {}
             _ => panic!("Expected an Err FrameError"),
         }
-
-        // bytes contains LF only
-        let result = crlr_position(b"Hello\n");
-        match result {
-            Err(FrameError::InvalidFrame(message)) => assert_eq!(message, "frame does not contain any CRLF"),
-            _ => panic!("Expected an Err FrameError"),
-        }
-
-        // no data
-        let result = crlr_position(b"");
-        match result {
-            Err(FrameError::InvalidFrame(message)) => assert_eq!(message, "frame does not contain any LF"),
-            _ => panic!("Expected an Err FrameError"),
-        }
-
-        // single byte
-        let result = crlr_position(b"H");
-        match result {
-            Err(FrameError::InvalidFrame(message)) => assert_eq!(message, "frame does not contain any LF"),
+        // Should not contain CR
+        let cursor = io::Cursor::new(b"Hello\rWorld\r\n");
+        let mut rd = BufReader::new(cursor);
+        let got = read_until_crlf_simple(&mut rd);
+        match got {
+            Err(FrameError::InvalidFrame) => {}
             _ => panic!("Expected an Err FrameError"),
         }
     }
 
     #[test]
-    fn test_read_integer() {
+    fn test_read_until_crlf_bulk() {
+        let cursor = io::Cursor::new(b"5\r\nHello\r\n11\r\nHello World\r\nWord\nHello");
+        let mut rd = BufReader::new(cursor);
+        // can read word word
+        let got = read_until_crlf_bulk(&mut rd).unwrap();
+        assert_eq!(got, b"Hello");
+        // can read a string of multiple words
+        let got = read_until_crlf_bulk(&mut rd).unwrap();
+        assert_eq!(got, b"Hello World");
+        // CR in the middle
+        let got = read_until_crlf_bulk(&mut rd);
+        match got {
+            Err(FrameError::InvalidFrame) => {}
+            _ => panic!("Expected an Err FrameError"),
+        }
+        // Should not contain CR
+        let cursor = io::Cursor::new(b"11\r\nHello\rWorld\r\n");
+        let mut rd = BufReader::new(cursor);
+        let got = read_until_crlf_bulk(&mut rd).unwrap();
+        assert_eq!(got, b"Hello\rWorld");
+    }
 
-        // read integer success
-        let buf: &[_] = b"1234\r\n";
-        let res = read_integer(buf).unwrap();
-        assert_eq!(res, (6, 1234));
+    #[test]
+    fn test_decode_simple_string() {
+        // test decode simple string
+        let cursor = io::Cursor::new(b"+Hello\r\n+Hello World\r\n+Word\n+\r\nHello");
+        let mut rd = BufReader::new(cursor);
+        // can read word word
+        let got = decode(&mut rd).unwrap();
+        assert_eq!(got, Frame::Simple("Hello".to_string()));
+        // can read a string of multiple words
+        let got = decode(&mut rd).unwrap();
+        assert_eq!(got, Frame::Simple("Hello World".to_string()));
+        // LF in the middle is not allowed
+        let got = decode(&mut rd);
+        match got {
+            Err(FrameError::InvalidFrame) => {}
+            _ => panic!("Expected an Err FrameError"),
+        }
+        // frame can be empty
+        let got = decode(&mut rd).unwrap();
+        assert_eq!(got, Frame::Simple("".to_string()));
+    }
 
-        // read a negative integer
-        let buf: &[_] = b"-9876\r\n";
-        let res = read_integer(buf).unwrap();
-        assert_eq!(res, (7, -9876));
+    #[test]
+    fn test_decode_error() {
+        let cursor = io::Cursor::new(b"-Hello\r\n-Hello World\r\n-Word\n-\r\nHello");
+        let mut rd = BufReader::new(cursor);
+        // can read word word
+        let got = decode(&mut rd).unwrap();
+        assert_eq!(got, Frame::Error("Hello".to_string()));
+        // can read a string of multiple words
+        let got = decode(&mut rd).unwrap();
+        assert_eq!(got, Frame::Error("Hello World".to_string()));
+        // LF in the middle is not allowed
+        let got = decode(&mut rd);
+        match got {
+            Err(FrameError::InvalidFrame) => {}
+            _ => panic!("Expected an Err FrameError"),
+        }
+        // frame can be empty
+        let got = decode(&mut rd).unwrap();
+        assert_eq!(got, Frame::Error("".to_string()));
+    }
 
-        // read integer with no crlr
-        let buf: &[_] = b"1234";
-        let res = read_integer(buf);
-        assert!(res.is_err());
+    #[test]
+    fn test_decode_integer() {
+        let cursor = io::Cursor::new(b":25\r\n:-25\r\n:0\r\n:notnumber\r\n:33");
+        let mut rd = BufReader::new(cursor);
+        // can read positive number
+        let got = decode(&mut rd).unwrap();
+        assert_eq!(got, Frame::Integer(25));
+        // can read negative number
+        let got = decode(&mut rd).unwrap();
+        assert_eq!(got, Frame::Integer(-25));
+        // Can read 0
+        let got = decode(&mut rd).unwrap();
+        assert_eq!(got, Frame::Integer(0));
+        // non number should fail
+        let got = decode(&mut rd);
+        match got {
+            Err(FrameError::InvalidFrame) => {}
+            _ => panic!("Expected an Err FrameError"),
+        }
+        // Should be properly terminated
+        let got = decode(&mut rd);
+        match got {
+            Err(FrameError::InvalidFrame) => {}
+            _ => panic!("Expected an Err FrameError"),
+        }
+    }
 
-        // read invalid utf8
-        let buf: &[u8] = &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
-        let res = read_integer(buf);
-        assert!(res.is_err());
+    #[test]
+    fn test_decode_bulk() {
+        let cursor = io::Cursor::new(b"$5\r\nHello\r\n$5\r\nWrong Size\r\n");
+        let mut rd = BufReader::new(cursor);
+        // can read word word
+        let got = decode(&mut rd).unwrap();
+        assert_eq!(got, Frame::Bulk("Hello".to_string()));
+        // Size does not match content
+        let got = decode(&mut rd);
+        match got {
+            Err(FrameError::InvalidFrame) => {}
+            _ => panic!("Expected an Err FrameError"),
+        }
+    }
 
-        // read non-numeric
-        let buf: &[_] = b"abc\r\n";
-        let res = read_integer(buf);
-        assert!(res.is_err());
+    #[test]
+    fn test_decode_bool() {
+        let cursor = io::Cursor::new(b"#t\r\n#f\r\n#5\r\nWrong\r\n");
+        let mut rd = BufReader::new(cursor);
+        // can get true
+        let got = decode(&mut rd).unwrap();
+        assert_eq!(got, Frame::Boolean(true));
+        // can get true
+        let got = decode(&mut rd).unwrap();
+        assert_eq!(got, Frame::Boolean(false));
+        // This is not a bool
+        let got = decode(&mut rd);
+        match got {
+            Err(FrameError::InvalidFrame) => {}
+            _ => panic!("Expected an Err FrameError"),
+        }
+    }
 
-        // read empty
-        let buf: &[_] = b"\r\n";
-        let res = read_integer(buf);
-        assert!(res.is_err());
+    #[test]
+    fn test_decode_array() {
+        let cursor = io::Cursor::new(b"*2\r\n$5\r\nhello\r\n:28\r\n+simple\r\n_\r\n#t\r\n");
+        let mut rd = BufReader::new(cursor);
+        // good array
+        let got = decode(&mut rd).unwrap();
+        let mut want = Frame::array();
+        want.push_back(Frame::Bulk("hello".to_string()))
+            .expect("success");
+        want.push_back(Frame::Integer(28)).expect("success");
+        assert_eq!(got, want);
 
-        // read empty integer
-        let buf: &[_] = b"\r\n";
-        let res = read_integer(buf);
-        assert!(res.is_err());
+        // bad array
+        let cursor = io::Cursor::new(b"*2\r\n$5\r\nhello1\r\n:28\r\n+simple\r\n_\r\n#t\r\n");
+        let mut rd = BufReader::new(cursor);
+        // Size does not match content
+        let got = decode(&mut rd);
+        match got {
+            Err(FrameError::InvalidFrame) => {}
+            _ => panic!("Expected an Err FrameError"),
+        }
     }
 }
