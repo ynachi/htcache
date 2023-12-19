@@ -9,7 +9,7 @@ use std::io::{BufRead, BufReader, Read};
 const MAX_ITEM_SIZE: usize = 4 * 1024;
 
 #[derive(Debug, Eq, PartialEq)]
-pub(crate) enum Frame {
+pub enum Frame {
     Simple(String),
     Error(String),
     Integer(i64),
@@ -26,7 +26,7 @@ impl Frame {
     }
 
     /// push_back push frames to an a frame array variant
-    pub(crate) fn push_back(&mut self, frame: Frame) -> Result<(), FrameError> {
+    pub fn push_back(&mut self, frame: Frame) -> Result<(), FrameError> {
         match self {
             Frame::Array(frames) => {
                 frames.push(frame);
@@ -37,7 +37,7 @@ impl Frame {
     }
 
     /// encode turns a Frame into a slice of bytes, ready to be transferred though a network
-    pub(crate) fn encode(&self) -> Vec<u8> {
+    pub fn encode(&self) -> Vec<u8> {
         match self {
             Frame::Simple(content) => {
                 let formatted_content = format!("+{}\r\n", content);
@@ -89,7 +89,7 @@ impl Frame {
     }
 
     /// write_to writes a frame to a writer
-    pub(crate) fn write_to<T: io::Write>(&self, w: &mut T) -> Result<(), io::Error> {
+    pub fn write_to<T: io::Write>(&self, w: &mut T) -> Result<(), io::Error> {
         let bytes = self.encode();
         w.write_all(bytes.as_slice())?;
         w.flush()?;
@@ -101,7 +101,7 @@ impl Frame {
 /// It first identify the frame type and decode it accordingly.
 /// Bytes read are lost if an error occurs.
 /// Errors are generally malformed frames.
-pub(crate) fn decode(rd: &mut BufReader<impl Read>) -> Result<Frame, FrameError> {
+pub fn decode<T: Read>(rd: &mut BufReader<T>) -> Result<Frame, FrameError> {
     let tag = read_single_byte(rd)?;
     match tag {
         // Simple String

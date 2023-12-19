@@ -3,7 +3,7 @@ use std::io;
 use std::string::FromUtf8Error;
 
 #[derive(Debug)]
-pub(crate) enum FrameError {
+pub enum FrameError {
     EOF,
     Encoding(io::Error),
     InvalidFrame,
@@ -32,3 +32,33 @@ impl From<io::Error> for FrameError {
         FrameError::Encoding(err)
     }
 }
+
+#[derive(Debug)]
+pub enum CommandError {
+    NotCmdFrame,
+    MalformedPing,
+    InvalidCmdFrame,
+    Connection,
+}
+
+impl Display for CommandError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        match self {
+            CommandError::NotCmdFrame => {
+                write!(f, "commands are only represented by arrays of frames")
+            }
+            CommandError::MalformedPing => {
+                write!(f, "ping command is invalid: malformed")
+            }
+            CommandError::InvalidCmdFrame => {
+                write!(f, "frame is an array but cannot be a valid command")
+            }
+            CommandError::Connection => {
+                write!(f, "network error: error while writing to network")
+            }
+        }
+    }
+}
+
+// Allow the error to be used with ?
+impl std::error::Error for CommandError {}

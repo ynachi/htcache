@@ -99,7 +99,7 @@ impl ThreadPool {
     pub fn shutdown(&mut self) {
         for _ in 0..self.size {
             if let Err(e) = self.sender.send(Message::Shutdown) {
-                eprintln!("error sending Shutdown command: {}", e);
+                eprintln!("error sending Shutdown cmd: {}", e);
             }
         }
         for worker in &mut self.workers {
