@@ -4,10 +4,11 @@ mod unknown;
 
 use crate::cmd::ping::Ping;
 use crate::cmd::unknown::Unknown;
+use crate::error;
 use crate::frame::Frame;
-use crate::{connection, error};
 use std::fmt::Display;
 use std::io;
+use Frame::Bulk;
 
 /// Command represents a redisy command
 pub trait Command: Display {
@@ -39,32 +40,14 @@ pub fn get_name(frame: &Frame) -> Result<String, error::CommandError> {
     // commands are only expressed as Frame arrays of bulks
     match frame {
         Frame::Array(frames) => {
-            if frames.len() == 0 {
+            if frames.is_empty() {
                 return Err(error::CommandError::InvalidCmdFrame);
             }
-            return match &frames[0] {
-                Frame::Bulk(cmd_name) => Ok(cmd_name.clone()),
+            match &frames[0] {
+                Bulk(cmd_name) => Ok(cmd_name.clone()),
                 _ => Err(error::CommandError::InvalidCmdFrame),
-            };
+            }
         }
         _ => Err(error::CommandError::NotCmdFrame),
-    }
-}
-
-/// run runs a command given by its type and frame. We need to issue the frame to
-/// construct the full command from it.
-pub fn run(command_type: CommandType, frame: Frame, conn: &mut connection::Connection) {
-    match command_type {
-        CommandType::Ping(mut cmd) => {
-            if let Err(e) = cmd.from(&frame) {
-                conn.send_error(&e);
-            }
-            cmd.apply();
-        }
-        CommandType::Unknown(mut cmd) => {
-            if let Err(e) = cmd.from(&frame) {
-                conn.send_error(&e);
-            }
-        }
     }
 }

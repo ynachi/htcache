@@ -36,9 +36,11 @@ impl From<io::Error> for FrameError {
 #[derive(Debug)]
 pub enum CommandError {
     NotCmdFrame,
+    Unknown(String),
     MalformedPing,
     InvalidCmdFrame,
     Connection,
+    FrameDecode(FrameError), // this variant is a wrapper of FrameError
 }
 
 impl Display for CommandError {
@@ -46,6 +48,9 @@ impl Display for CommandError {
         match self {
             CommandError::NotCmdFrame => {
                 write!(f, "commands are only represented by arrays of frames")
+            }
+            CommandError::Unknown(cmd_name) => {
+                write!(f, "unknown command: {}", cmd_name)
             }
             CommandError::MalformedPing => {
                 write!(f, "ping command is invalid: malformed")
@@ -55,6 +60,9 @@ impl Display for CommandError {
             }
             CommandError::Connection => {
                 write!(f, "network error: error while writing to network")
+            }
+            CommandError::FrameDecode(e) => {
+                write!(f, "{}", e)
             }
         }
     }
