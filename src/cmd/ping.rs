@@ -29,7 +29,7 @@ impl Command for Ping {
                 }
                 if content.len() == 1 {
                     self.message = "PONG".to_string();
-                } else if let Frame::Simple(value) = &content[1] {
+                } else if let Frame::Bulk(value) = &content[1] {
                     self.message = value.to_string();
                 }
                 Ok(())
