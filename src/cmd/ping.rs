@@ -1,17 +1,10 @@
 use crate::cmd::{get_name, Command};
 use crate::error;
 use crate::frame::Frame;
-use std::fmt::{Display, Formatter};
 use std::io::Write;
 
 pub struct Ping {
     message: String,
-}
-
-impl Display for Ping {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
-    }
 }
 
 impl Command for Ping {

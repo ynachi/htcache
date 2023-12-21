@@ -43,3 +43,12 @@ pub(crate) enum Frame {
 
 ### Error module
 The [Error](src/error.rs): The error module defines custom errors for frame encoding/decoding.
+
+### Command module
+The command module is organized in submodules, each of them representing a command.
+Every command should implement the [Command trait](src/cmd/mod.rs).
+Adding a new command is a two-step process.
+First, one needs to add a new implementation of the trait as a `cmd` submodule.
+Second, you need to update the factory method `apply_command` in the [connection] module.
+While the connection method could become too big in the long run,
+it is an acceptable trade-off for now to avoid using dynamic dispatch (dyn).

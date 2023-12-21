@@ -1,4 +1,4 @@
-use crate::cmd::{get_name, ping, Command};
+use crate::cmd::{self, Command};
 use crate::error::CommandError;
 use crate::error::FrameError;
 use crate::frame;
@@ -72,7 +72,7 @@ impl Connection {
         //1. get frame fist
         let frame = self.read_frame()?;
         // 2. Get the command name
-        let cmd_name = get_name(&frame);
+        let cmd_name = cmd::get_name(&frame);
         match cmd_name {
             Ok(cmd_name) => {
                 // @TODO add db later
@@ -86,11 +86,11 @@ impl Connection {
     fn apply_command(&mut self, cmd_name: &str, frame: &Frame) {
         match cmd_name {
             "PING" => {
-                let mut cmd = ping::new();
-                cmd.from(frame).unwrap_or_else(|err| {
+                let mut new_cmd = cmd::ping::new();
+                new_cmd.from(frame).unwrap_or_else(|err| {
                     self.send_error(&err);
                 });
-                cmd.apply(&mut self.writer).unwrap_or_else(|err| {
+                new_cmd.apply(&mut self.writer).unwrap_or_else(|err| {
                     eprintln!("error writing response to client: {}", err);
                 });
             }
