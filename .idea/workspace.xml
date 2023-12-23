@@ -14,11 +14,8 @@
   <component name="ChangeListManager">
     <list default="true" id="6014c35b-c356-42a3-9550-bac009aceb4d" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/DESIGN.md" beforeDir="false" afterPath="$PROJECT_DIR$/DESIGN.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cmd/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cmd/ping.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/ping.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cmd/unknown.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/connection.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/connection.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/error.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -239,7 +236,7 @@
       <workItem from="1702673851343" duration="30000" />
       <workItem from="1702721700792" duration="826000" />
       <workItem from="1702968943735" duration="31334000" />
-      <workItem from="1703189692921" duration="1229000" />
+      <workItem from="1703189692921" duration="20434000" />
     </task>
     <servers />
   </component>

@@ -5,3 +5,5 @@ pub mod server;
 pub mod threadpool;
 
 pub mod cmd;
+
+pub mod db;

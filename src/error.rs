@@ -70,3 +70,17 @@ impl Display for CommandError {
 
 // Allow the error to be used with ?
 impl std::error::Error for CommandError {}
+
+#[derive(Debug)]
+pub enum DatabaseError {
+    PoisonedMutex,
+}
+
+impl Display for DatabaseError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        match self {
+            DatabaseError::PoisonedMutex => write!(f, "unable to acquire lock: mutex is poisoned"),
+        }
+    }
+}
+impl std::error::Error for DatabaseError {}
