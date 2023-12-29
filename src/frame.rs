@@ -117,9 +117,7 @@ pub fn decode<T: Read>(rd: &mut BufReader<T>) -> Result<Frame, FrameError> {
         // Integer
         b':' => {
             let content_string = read_simple_string(rd)?;
-            let content = content_string
-                .parse()
-                .map_err(|_| FrameError::InvalidFrame)?;
+            let content = content_string.parse()?;
             Ok(Frame::Integer(content))
         }
         // Bulk
@@ -167,7 +165,7 @@ fn read_single_byte(rd: &mut BufReader<impl Read>) -> Result<u8, FrameError> {
 /// string_from reads a simple string from a reader.
 fn read_simple_string(rd: &mut BufReader<impl Read>) -> Result<String, FrameError> {
     let bytes = read_until_crlf_simple(rd)?;
-    let content = String::from_utf8(bytes).map_err(FrameError::InvalidUTF8)?;
+    let content = String::from_utf8(bytes)?;
     Ok(content)
 }
 
@@ -199,7 +197,7 @@ fn validate_simple_buff(buff: &Vec<u8>, num_bytes: usize) -> Result<(), FrameErr
 /// read_bulk_string_from_reader reads a bulk string from a reader.
 fn read_bulk_string(rd: &mut BufReader<impl Read>) -> Result<String, FrameError> {
     let bytes = read_until_crlf_bulk(rd)?;
-    let content = String::from_utf8(bytes).map_err(FrameError::InvalidUTF8)?;
+    let content = String::from_utf8(bytes)?;
     Ok(content)
 }
 
@@ -208,7 +206,7 @@ fn read_bulk_string(rd: &mut BufReader<impl Read>) -> Result<String, FrameError>
 fn read_until_crlf_bulk(rd: &mut BufReader<impl Read>) -> Result<Vec<u8>, FrameError> {
     // Read the size first
     let frame_size = read_simple_string(rd)?;
-    let frame_size = frame_size.parse().map_err(|_| FrameError::InvalidFrame)?;
+    let frame_size = frame_size.parse()?;
 
     // now read the number of relevant bytes + CRLF
     // reminder: bulk frame is like $<length>\r\n<data>\r\n where length == len(data)
@@ -242,7 +240,7 @@ fn validate_bulk_buff(
 fn decode_array(rd: &mut BufReader<impl Read>) -> Result<Frame, FrameError> {
     // Read the length first
     let array_length = read_simple_string(rd)?;
-    let array_length = array_length.parse().map_err(|_| FrameError::InvalidFrame)?;
+    let array_length = array_length.parse()?;
 
     let mut arr = Frame::array();
 

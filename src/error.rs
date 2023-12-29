@@ -1,5 +1,6 @@
 use std::fmt::{Debug, Display, Formatter, Result};
 use std::io;
+use std::num::ParseIntError;
 use std::string::FromUtf8Error;
 
 #[derive(Debug)]
@@ -8,7 +9,8 @@ pub enum FrameError {
     Encoding(io::Error),
     InvalidFrame,
     InvalidType,
-    InvalidUTF8(FromUtf8Error),
+    StringFromUTF8(FromUtf8Error),
+    IntFromUTF8(ParseIntError),
 }
 
 impl Display for FrameError {
@@ -18,7 +20,8 @@ impl Display for FrameError {
             FrameError::InvalidFrame => write!(f, "RESP frame is malformed"),
             FrameError::InvalidType => write!(f, "wrong RESP frame type, needed another type here"),
             FrameError::EOF => write!(f, "file reached EOF"),
-            FrameError::InvalidUTF8(err) => write!(f, "cannot convert bytes to string: {}", err),
+            FrameError::StringFromUTF8(err) => write!(f, "cannot convert bytes to string: {}", err),
+            FrameError::IntFromUTF8(err) => write!(f, "cannot convert bytes to int: {}", err),
         }
     }
 }
@@ -30,6 +33,18 @@ impl std::error::Error for FrameError {}
 impl From<io::Error> for FrameError {
     fn from(err: io::Error) -> Self {
         FrameError::Encoding(err)
+    }
+}
+
+impl From<FromUtf8Error> for FrameError {
+    fn from(value: FromUtf8Error) -> Self {
+        FrameError::StringFromUTF8(value)
+    }
+}
+
+impl From<ParseIntError> for FrameError {
+    fn from(value: ParseIntError) -> Self {
+        FrameError::IntFromUTF8(value)
     }
 }
 
@@ -74,12 +89,14 @@ impl std::error::Error for CommandError {}
 #[derive(Debug)]
 pub enum DatabaseError {
     PoisonedMutex,
+    NoAllocation,
 }
 
 impl Display for DatabaseError {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             DatabaseError::PoisonedMutex => write!(f, "unable to acquire lock: mutex is poisoned"),
+            DatabaseError::NoAllocation => write!(f, "no capacity allocated to the database"),
         }
     }
 }
