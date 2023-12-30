@@ -88,14 +88,12 @@ impl std::error::Error for CommandError {}
 
 #[derive(Debug)]
 pub enum DatabaseError {
-    PoisonedMutex,
     NoAllocation,
 }
 
 impl Display for DatabaseError {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            DatabaseError::PoisonedMutex => write!(f, "unable to acquire lock: mutex is poisoned"),
             DatabaseError::NoAllocation => write!(f, "no capacity allocated to the database"),
         }
     }

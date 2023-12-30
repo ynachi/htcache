@@ -1,12 +1,13 @@
-use crate::connection;
 use crate::error::{CommandError, FrameError};
 use crate::threadpool;
+use crate::{connection, db};
 use std::io;
 use std::net::TcpListener;
 
 pub struct Server {
     thread_pool: threadpool::ThreadPool,
     listener: TcpListener,
+    db: db::lfu::LFUCacheMap,
 }
 
 /// new creates and start a new server.
@@ -14,12 +15,14 @@ pub struct Server {
 /// It is required in this case because creating a new server requires
 /// to prepare threads that it will use to process the requests.
 /// And, creating threads are likely to fail for reasons related to the OS.
-pub fn new(ip: String, port: u16, num_workers: usize) -> io::Result<Server> {
+pub fn new(ip: String, port: u16, num_workers: usize, max_item_size: usize) -> io::Result<Server> {
     let thread_pool = threadpool::ThreadPool::new(num_workers)?;
     let listener = TcpListener::bind((ip, port))?;
+    let db = db::lfu::LFUCacheMap::new(max_item_size);
     Ok(Server {
         thread_pool,
         listener,
+        db,
     })
 }
 

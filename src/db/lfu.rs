@@ -1,89 +1,78 @@
-use crate::db::{Database, Entry};
-use crate::error;
-use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashMap};
-use std::sync;
+use crate::db;
+use std::collections::{HashMap, VecDeque};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, RwLock};
 
-struct LFUCache {
-    data: sync::RwLock<HashMap<String, Entry>>,
-    max_size: usize,
-    rank: sync::RwLock<BinaryHeap<Reverse<Entry>>>,
+struct LFU {
+    // minimum frequency in the cache
+    min_frequency: AtomicUsize,
+    // frequency count long with values. Think of it as frequency bucket
+    // usize is the frequency and VecDeque a bucket to objects with that frequency.
+    frequency: RwLock<HashMap<usize, VecDeque<Arc<db::Entry>>>>,
 }
 
-impl LFUCache {
-    fn is_full(&self) -> Result<bool, error::DatabaseError> {
-        let curr_size = self.get_size()?;
-        Ok(curr_size >= self.max_size)
-    }
-
-    fn get_size(&self) -> Result<usize, error::DatabaseError> {
-        let data = self
-            .data
-            .read()
-            .map_err(|_| error::DatabaseError::PoisonedMutex)?;
-        Ok(data.len())
-    }
-}
-
-impl Database for LFUCache {
-    fn get(&mut self, key: &str) -> Result<Option<Entry>, error::DatabaseError> {
-        let data = self
-            .data
-            .read()
-            .map_err(|_| error::DatabaseError::PoisonedMutex)?;
-        if let Some(entry) = data.get(key) {
-            let mut entry = entry.clone();
-            entry.update_frequency();
-            return Ok(Some(entry.clone()));
+impl LFU {
+    fn new() -> Self {
+        LFU {
+            min_frequency: AtomicUsize::new(0),
+            frequency: RwLock::new(HashMap::new()),
         }
-        Ok(None)
     }
 
-    fn set(&mut self, key: String, entry: Entry) -> Result<(), error::DatabaseError> {
-        // need to evict ?
-        while self.is_full()? {
-            let to_evict_key = self.chose_evict()?;
-            if let Some(to_evict_key) = to_evict_key {
-                self.delete(to_evict_key)?;
+    fn get_min_frequency(&self) -> usize {
+        self.min_frequency.load(Ordering::SeqCst)
+    }
+
+    fn incr_min_frequency(&self) -> usize {
+        self.min_frequency.fetch_add(1, Ordering::SeqCst)
+    }
+}
+impl db::Eviction for LFU {
+    fn refresh(&mut self, entry: Arc<db::Entry>) {
+        // remove from the bucket
+        let mut guard = self.frequency.write().unwrap();
+        if let Some(mut frequency_bucket) = guard.get(&entry.usage_freq) {
+            frequency_bucket.retain(|&k| k != entry);
+        }
+
+        // increase entry usage and add it back to the bucket
+        entry.usage_freq += 1;
+        let new_frequency_bucket = guard.entry(entry.usage_freq).or_insert(VecDeque::new());
+        new_frequency_bucket.push_front(entry);
+
+        // check if we need to update min_frequency
+        if let Some(frequency_bucket) = guard.get(&self.get_min_frequency()) {
+            if frequency_bucket.is_empty() {
+                self.incr_min_frequency();
             }
         }
-        // insert the key
-        let mut data = self
-            .data
-            .write()
-            .map_err(|_| error::DatabaseError::PoisonedMutex)?;
-        data.insert(key, entry.clone());
-        // now refresh
-        let mut rank = self
-            .rank
-            .write()
-            .map_err(|_| error::DatabaseError::PoisonedMutex)?;
-        rank.push(Reverse(entry));
-        Ok(())
     }
 
-    fn delete(&mut self, key: String) -> Result<(), error::DatabaseError> {
-        let mut data = self
-            .data
-            .write()
-            .map_err(|_| error::DatabaseError::PoisonedMutex)?;
-        data.remove(&key);
-        // no need to also remove in the heap. The cleanup will be done by itself as we evict keys
-        Ok(())
-    }
-
-    fn iterate(&self) -> Box<dyn Iterator<Item = Entry>> {
-        todo!()
-    }
-
-    fn chose_evict(&self) -> Result<Option<String>, error::DatabaseError> {
-        let mut rank = self
-            .rank
-            .write()
-            .map_err(|_| error::DatabaseError::PoisonedMutex)?;
-        if let Some(entry) = rank.pop() {
-            return Ok(Some(entry.0.key));
+    // @TODO check if we need to update min_frequency after evict, not sure yet
+    fn evict(&mut self) -> Option<Arc<db::Entry>> {
+        // find the next element to evict first
+        // remove it from the corresponding bucket
+        // return a reference to it
+        let guard = self.frequency.write().unwrap();
+        if let Some(mut min_frequency_bucket) = guard.get(&self.get_min_frequency()) {
+            let entry = min_frequency_bucket.pop_back();
+            if entry.is_some() {
+                min_frequency_bucket.retain(|&k| k != entry.unwrap());
+            }
+            return entry;
         }
-        Ok(None)
+        None
+    }
+
+    /// remove removes an entry from the eviction data structure.
+    /// It is typically called after remove on the storage backend.
+    /// When we call remove on the storage backend, it returned the removed item,
+    /// which can then be used in the call of this method.
+    /// The reason we do that way is that both structures should be tied for proper eviction.
+    fn remove(&mut self, entry: Arc<db::Entry>) {
+        let guard = self.frequency.write().unwrap();
+        if let Some(mut frequency_bucket) = guard.get(&entry.usage_freq) {
+            frequency_bucket.retain(|&k| k != entry);
+        }
     }
 }
