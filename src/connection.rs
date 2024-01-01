@@ -1,4 +1,3 @@
-
 use crate::cmd::{self, Command};
 use crate::error::CommandError;
 use crate::error::FrameError;
@@ -72,7 +71,9 @@ impl Connection {
     pub fn handle_command(&mut self) -> Result<(), FrameError> {
         //1. get frame fist
         let frame = self.read_frame()?;
-        // 2. Get the command name
+        // @TODO uncomment to debug
+        println!("{}", frame); // @TODO: remove me after debug
+                               // 2. Get the command name
         let cmd_name = cmd::get_name(&frame);
         match cmd_name {
             Ok(cmd_name) => {
@@ -85,9 +86,18 @@ impl Connection {
     }
 
     fn apply_command(&mut self, cmd_name: &str, frame: &Frame) {
-        match cmd_name {
+        match cmd_name.to_ascii_uppercase().as_str() {
             "PING" => {
                 let mut new_cmd = cmd::ping::new();
+                new_cmd.from(frame).unwrap_or_else(|err| {
+                    self.send_error(&err);
+                });
+                new_cmd.apply(&mut self.writer).unwrap_or_else(|err| {
+                    eprintln!("error writing response to client: {}", err);
+                });
+            }
+            "CONFIG" => {
+                let mut new_cmd = cmd::config::new();
                 new_cmd.from(frame).unwrap_or_else(|err| {
                     self.send_error(&err);
                 });

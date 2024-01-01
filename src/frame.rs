@@ -2,13 +2,15 @@
 //! https://redis.io/docs/reference/protocol-spec/
 
 use crate::error::FrameError;
+use std::cmp::Ordering;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt::{Display, Formatter};
 use std::io;
 use std::io::{BufRead, BufReader, Read};
 
 const MAX_ITEM_SIZE: usize = 4 * 1024;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub enum Frame {
     Simple(String),
     Error(String),
@@ -17,12 +19,40 @@ pub enum Frame {
     Array(Vec<Frame>),
     Null,
     Boolean(bool),
+    Map(BTreeMap<Frame, Frame>),
+}
+
+impl Ord for Frame {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (self, other) {
+            (Frame::Simple(a), Frame::Simple(b)) => a.cmp(b),
+            (Frame::Error(a), Frame::Error(b)) => a.cmp(b),
+            (Frame::Integer(a), Frame::Integer(b)) => a.cmp(b),
+            (Frame::Bulk(a), Frame::Bulk(b)) => a.cmp(b),
+            (Frame::Array(a), Frame::Array(b)) => a.cmp(b),
+            (Frame::Map(a), Frame::Map(b)) => a.cmp(b),
+            (Frame::Null, Frame::Null) => Ordering::Equal,
+            (Frame::Boolean(a), Frame::Boolean(b)) => a.cmp(b),
+            _ => panic!("Can't compare different Frame variants"),
+        }
+    }
+}
+
+impl PartialOrd for Frame {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl Frame {
     /// array returns an empty array of frames
-    fn array() -> Frame {
+    pub fn array() -> Frame {
         Frame::Array(vec![])
+    }
+
+    /// map create an empty map of frames
+    pub fn map() -> Frame {
+        Frame::Map(BTreeMap::new())
     }
 
     /// push_back push frames to an a frame array variant
@@ -30,6 +60,17 @@ impl Frame {
         match self {
             Frame::Array(frames) => {
                 frames.push(frame);
+                Ok(())
+            }
+            _ => Err(FrameError::InvalidType),
+        }
+    }
+
+    /// add_map_frame add a frame to a Map of frames.
+    pub fn add_map_frame(&mut self, key: Frame, value: Frame) -> Result<(), FrameError> {
+        match self {
+            Frame::Map(frames) => {
+                frames.insert(key, value);
                 Ok(())
             }
             _ => Err(FrameError::InvalidType),
@@ -82,6 +123,17 @@ impl Frame {
                 bytes.extend(b"\r\n");
                 for f in frames {
                     bytes.extend(f.encode());
+                }
+                bytes
+            }
+
+            Frame::Map(frames) => {
+                let mut bytes = vec![b'%'];
+                bytes.extend(frames.len().to_string().as_bytes());
+                bytes.extend(b"\r\n");
+                for (k, v) in frames {
+                    bytes.extend(k.encode());
+                    bytes.extend(v.encode())
                 }
                 bytes
             }
@@ -147,6 +199,8 @@ pub fn decode<T: Read>(rd: &mut BufReader<T>) -> Result<Frame, FrameError> {
         }
         // Array
         b'*' => decode_array(rd),
+        // Map
+        b'%' => decode_map(rd),
         _ => Err(FrameError::InvalidType),
     }
 }
@@ -250,6 +304,24 @@ fn decode_array(rd: &mut BufReader<impl Read>) -> Result<Frame, FrameError> {
     }
 
     Ok(arr)
+}
+
+/// decode_map decodes a frame map from a reader.
+/// The tag identifying the frame is considered to be already read.
+fn decode_map(rd: &mut BufReader<impl Read>) -> Result<Frame, FrameError> {
+    // Read the length first
+    let map_length = read_simple_string(rd)?;
+    let map_length = map_length.parse()?;
+
+    let mut map = Frame::map();
+
+    for _ in 0..map_length {
+        let key = decode(rd)?;
+        let value = decode(rd)?;
+        map.add_map_frame(key, value)?;
+    }
+
+    Ok(map)
 }
 
 impl Display for Frame {
