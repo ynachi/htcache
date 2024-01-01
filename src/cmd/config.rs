@@ -26,17 +26,18 @@ impl Command for Config {
         response.write_to(dest)
     }
 
-    fn from(&mut self, frame: &Frame) -> Result<(), error::CommandError> {
+    fn from(frame: &Frame) -> Result<Self, error::CommandError> {
         let cmd_name = get_name(frame)?;
+        let mut options = String::new();
         match frame {
             Frame::Array(content) => {
                 if cmd_name != "CONFIG" {
                     return Err(error::CommandError::MalformedPing);
                 }
                 if let Frame::Bulk(value) = &content[2] {
-                    self.options = value.to_string();
+                    options = value.into();
                 }
-                Ok(())
+                Ok(Config { options })
             }
             _ => Err(error::CommandError::NotCmdFrame),
         }

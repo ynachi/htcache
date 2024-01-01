@@ -17,19 +17,20 @@ impl Command for Ping {
         response.write_to(dest)
     }
 
-    fn from(&mut self, frame: &Frame) -> Result<(), error::CommandError> {
+    fn from(frame: &Frame) -> Result<Self, error::CommandError> {
         let cmd_name = get_name(frame)?;
+        let mut message = String::new();
         match frame {
             Frame::Array(content) => {
                 if cmd_name.to_ascii_uppercase() != "PING" || content.len() > 2 {
                     return Err(error::CommandError::MalformedPing);
                 }
                 if content.len() == 1 {
-                    self.message = "PONG".to_string();
+                    message = "PONG".into();
                 } else if let Frame::Bulk(value) = &content[1] {
-                    self.message = value.to_string();
+                    message = value.into();
                 }
-                Ok(())
+                Ok(Ping { message })
             }
             _ => Err(error::CommandError::NotCmdFrame),
         }

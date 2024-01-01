@@ -15,7 +15,9 @@ pub trait Command {
     fn apply<T: io::Write>(&self, dest: &mut T) -> io::Result<()>;
 
     /// from read forms the command from a frame
-    fn from(&mut self, frame: &Frame) -> Result<(), error::CommandError>;
+    fn from(frame: &Frame) -> Result<Self, error::CommandError>
+    where
+        Self: Sized;
 }
 
 /// get_name gets the name of the command from the frame

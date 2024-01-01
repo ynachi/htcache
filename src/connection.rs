@@ -85,26 +85,24 @@ impl Connection {
         Ok(())
     }
 
+    fn execute_command<Cmd>(&mut self, frame: &Frame)
+    where
+        Cmd: Command,
+    {
+        match Cmd::from(frame) {
+            Ok(command) => {
+                command.apply(&mut self.writer).unwrap_or_else(|err| {
+                    eprintln!("error writing response to client: {}", err);
+                });
+            }
+            Err(err) => self.send_error(&err),
+        }
+    }
+
     fn apply_command(&mut self, cmd_name: &str, frame: &Frame) {
-        match cmd_name.to_ascii_uppercase().as_str() {
-            "PING" => {
-                let mut new_cmd = cmd::ping::new();
-                new_cmd.from(frame).unwrap_or_else(|err| {
-                    self.send_error(&err);
-                });
-                new_cmd.apply(&mut self.writer).unwrap_or_else(|err| {
-                    eprintln!("error writing response to client: {}", err);
-                });
-            }
-            "CONFIG" => {
-                let mut new_cmd = cmd::config::new();
-                new_cmd.from(frame).unwrap_or_else(|err| {
-                    self.send_error(&err);
-                });
-                new_cmd.apply(&mut self.writer).unwrap_or_else(|err| {
-                    eprintln!("error writing response to client: {}", err);
-                });
-            }
+        match cmd_name.to_uppercase().as_str() {
+            "PING" => self.execute_command::<cmd::ping::Ping>(frame),
+            "CONFIG" => self.execute_command::<cmd::config::Config>(frame),
             _ => self.send_error(&CommandError::Unknown(cmd_name.to_string())),
         }
     }
