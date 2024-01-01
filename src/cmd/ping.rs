@@ -9,7 +9,11 @@ pub struct Ping {
 
 impl Command for Ping {
     fn apply<T: Write>(&self, dest: &mut T) -> std::io::Result<()> {
-        let response = Frame::Simple(self.message.clone());
+        let response = if self.message == "PONG" {
+            Frame::Simple(self.message.clone())
+        } else {
+            Frame::Bulk(self.message.clone())
+        };
         response.write_to(dest)
     }
 
@@ -17,7 +21,7 @@ impl Command for Ping {
         let cmd_name = get_name(frame)?;
         match frame {
             Frame::Array(content) => {
-                if cmd_name != "PING" || content.len() > 2 {
+                if cmd_name.to_ascii_uppercase() != "PING" || content.len() > 2 {
                     return Err(error::CommandError::MalformedPing);
                 }
                 if content.len() == 1 {
