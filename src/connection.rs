@@ -1,11 +1,12 @@
 use crate::cmd::{self, Command};
 use crate::error::CommandError;
 use crate::error::FrameError;
-use crate::frame;
 use crate::frame::Frame;
+use crate::{db, frame};
 use std::io;
-use std::io::{BufReader, Write};
+use std::io::{BufReader, BufWriter, Write};
 use std::net::{Shutdown, TcpStream};
+use std::sync::Arc;
 use std::time::Duration;
 
 /// The client should give up after timeout attempt to write to the stream.
@@ -15,9 +16,12 @@ const WRITE_TIMEOUT: Option<Duration> = Some(Duration::new(0, 1000));
 /// Represents a connection to the server. It contains the TCPStream returned by the connection
 /// and a read buffer
 pub struct Connection {
+    // conn is the raw tcp stream created when a connection is established.
     conn: TcpStream,
     reader: BufReader<TcpStream>,
-    writer: TcpStream,
+    writer: BufWriter<TcpStream>,
+    // a connection receive an atomic reference of a cache struct to operate on.
+    // cache: Arc<db::Cache<S, E>>,
 }
 
 impl Connection {
@@ -33,7 +37,7 @@ impl Connection {
         Ok(Self {
             conn: stream,
             reader: BufReader::new(read_clone),
-            writer: write_clone,
+            writer: BufWriter::new(write_clone),
         })
     }
 
@@ -42,7 +46,7 @@ impl Connection {
         frame::decode(&mut self.reader)
     }
 
-    /// read_frame reads a frame from this connection.
+    /// write_frame writes a frame to the connection connection.
     pub fn write_frame(&mut self, frame: &Frame) -> Result<(), io::Error> {
         let bytes = frame.encode();
         self.writer.write_all(bytes.as_slice())?;
@@ -72,8 +76,8 @@ impl Connection {
         //1. get frame fist
         let frame = self.read_frame()?;
         // @TODO uncomment to debug
-        println!("{}", frame); // @TODO: remove me after debug
-                               // 2. Get the command name
+        // println!("{}", frame); // @TODO: remove me after debug
+        // 2. Get the command name
         let cmd_name = cmd::get_name(&frame);
         match cmd_name {
             Ok(cmd_name) => {
@@ -100,7 +104,7 @@ impl Connection {
     }
 
     fn apply_command(&mut self, cmd_name: &str, frame: &Frame) {
-        match cmd_name.to_uppercase().as_str() {
+        match cmd_name {
             "PING" => self.execute_command::<cmd::ping::Ping>(frame),
             "CONFIG" => self.execute_command::<cmd::config::Config>(frame),
             _ => self.send_error(&CommandError::Unknown(cmd_name.to_string())),

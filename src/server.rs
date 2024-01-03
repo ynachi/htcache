@@ -8,6 +8,9 @@ pub struct Server<S: db::Storage, E: db::Eviction> {
     thread_pool: threadpool::ThreadPool,
     listener: TcpListener,
     cache: db::Cache<S, E>,
+    // @ TODO: uncomment and implement
+    // max_connection: AtomicUsize,
+    // is_shutdown: AtomicBool,
 }
 
 /// create_storage_type create storage type from name.
@@ -30,31 +33,33 @@ pub fn create_eviction_type(name: &str) -> db::eviction::EvictionPolicyType {
     }
 }
 
-/// `new` return a Result instead of the actual type.
+/// `create_server` return a Result instead of the actual type.
 /// It is required in this case because creating a new server requires
 /// to prepare threads that it will use to process the requests.
 /// And, creating threads are likely to fail for reasons related to the OS.
-pub fn new(
-    ip: String,
-    port: u16,
-    num_workers: usize,
-    max_item_size: usize,
-    storage_type_name: &str,
-    eviction_policy_name: &str,
+pub fn create_server(
+    server_ip: String,
+    server_port: u16,
+    worker_count: usize,
+    max_size: usize,
+    storage_name: &str,
+    eviction_policy: &str,
 ) -> io::Result<Server<impl db::Storage, impl db::Eviction>> {
-    let thread_pool = threadpool::ThreadPool::new(num_workers)?;
-    let listener = TcpListener::bind((ip, port))?;
+    let pool = threadpool::ThreadPool::new(worker_count)?;
+    let tcp_listener = TcpListener::bind((server_ip, server_port))?;
+    let storage = create_storage_type(storage_name);
+    let eviction = create_eviction_type(eviction_policy);
+    let server_storage = db::storage::create_storage(storage, max_size);
+    let server_eviction = db::eviction::create_eviction_policy(eviction);
+    let cache = db::create_cache(server_storage, server_eviction);
+    build_server(pool, tcp_listener, cache)
+}
 
-    let storage_type = create_storage_type(storage_type_name);
-    let eviction_type = create_eviction_type(eviction_policy_name);
-    let storage = db::storage::create_storage(storage_type, max_item_size);
-    let eviction = db::eviction::create_eviction_policy(eviction_type);
-
-    let cache = db::CacheBuilder::new()
-        .with_storage(storage)
-        .with_eviction(eviction)
-        .build();
-
+fn build_server<S: db::Storage, E: db::Eviction>(
+    thread_pool: threadpool::ThreadPool,
+    listener: TcpListener,
+    cache: db::Cache<S, E>,
+) -> io::Result<Server<impl db::Storage, impl db::Eviction>> {
     Ok(Server {
         thread_pool,
         listener,
@@ -66,24 +71,29 @@ impl<S: db::Storage, E: db::Eviction> Server<S, E> {
     /// listen listens to incoming connections and process them.
     pub fn listen(&self) {
         for stream in self.listener.incoming() {
-            match stream {
-                Ok(stream) => {
-                    let conn = connection::Connection::new(stream);
-                    match conn {
-                        Ok(mut conn) => {
-                            self.thread_pool
-                                .execute(move || handle_connection(&mut conn));
-                        }
-                        Err(e) => {
-                            eprintln!("failed to create connection object: {}", e)
-                        }
-                    }
-                }
+            let stream = match stream {
+                Ok(stream) => stream,
                 Err(e) => {
-                    eprintln!("failed to establish connection: {}", e)
+                    self.log_error("failed to establish connection", e);
+                    continue;
                 }
-            }
+            };
+
+            let mut conn = match connection::Connection::new(stream) {
+                Ok(conn) => conn,
+                Err(e) => {
+                    self.log_error("failed to create connection object", e);
+                    continue;
+                }
+            };
+
+            self.thread_pool
+                .execute(move || handle_connection(&mut conn));
         }
+    }
+
+    fn log_error(&self, message: &str, error: impl std::fmt::Display) {
+        eprintln!("{}: {}", message, error);
     }
 }
 

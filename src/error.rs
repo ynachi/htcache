@@ -11,6 +11,7 @@ pub enum FrameError {
     InvalidType,
     StringFromUTF8(FromUtf8Error),
     IntFromUTF8(ParseIntError),
+    UnexpectedEOF,
 }
 
 impl Display for FrameError {
@@ -20,6 +21,7 @@ impl Display for FrameError {
             FrameError::InvalidFrame => write!(f, "RESP frame is malformed"),
             FrameError::InvalidType => write!(f, "wrong RESP frame type, needed another type here"),
             FrameError::EOF => write!(f, "file reached EOF"),
+            FrameError::UnexpectedEOF => write!(f, "connection abruptly closed"),
             FrameError::StringFromUTF8(err) => write!(f, "cannot convert bytes to string: {}", err),
             FrameError::IntFromUTF8(err) => write!(f, "cannot convert bytes to int: {}", err),
         }

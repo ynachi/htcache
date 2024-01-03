@@ -137,6 +137,16 @@ impl<S: Storage, E: Eviction> Default for CacheBuilder<S, E> {
     }
 }
 
+pub fn create_cache(
+    storage: impl Storage,
+    eviction: impl Eviction,
+) -> Cache<impl Storage, impl Eviction> {
+    CacheBuilder::new()
+        .with_storage(storage)
+        .with_eviction(eviction)
+        .build()
+}
+
 /// Entry represents a cache item
 #[derive(Debug, Clone)]
 pub struct Entry {

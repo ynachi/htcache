@@ -279,14 +279,18 @@ fn validate_bulk_buff(
     read_size: usize,
     frame_size: usize,
 ) -> Result<(), FrameError> {
-    // This is EOF, returns a different error for it
-    if read_size == 0 {
-        return Err(FrameError::EOF);
+    match read_size {
+        0 => match buff.is_empty() {
+            true => Err(FrameError::EOF),
+            false => Err(FrameError::UnexpectedEOF),
+        },
+        _ => {
+            if read_size != frame_size + 2 || buff[buff.len() - 2] != b'\r' {
+                return Err(FrameError::InvalidFrame);
+            }
+            Ok(())
+        }
     }
-    if read_size != frame_size + 2 || buff[buff.len() - 2] != b'\r' {
-        return Err(FrameError::InvalidFrame);
-    }
-    Ok(())
 }
 
 /// decode_array decodes a frame Array from a reader.

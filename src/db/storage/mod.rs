@@ -1,5 +1,5 @@
 mod map;
-use crate::db::{storage, Storage};
+use crate::db::Storage;
 pub use map::*;
 
 //
@@ -11,6 +11,6 @@ pub enum StorageType {
 
 pub fn create_storage(storage_type: StorageType, size: usize) -> impl Storage {
     match storage_type {
-        StorageType::Map => storage::Map::new(size),
+        StorageType::Map => Map::new(size),
     }
 }

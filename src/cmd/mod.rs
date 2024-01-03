@@ -29,7 +29,7 @@ pub fn get_name(frame: &Frame) -> Result<String, error::CommandError> {
                 return Err(error::CommandError::InvalidCmdFrame);
             }
             match &frames[0] {
-                Bulk(cmd_name) => Ok(cmd_name.clone()),
+                Bulk(cmd_name) => Ok(cmd_name.to_uppercase()),
                 _ => Err(error::CommandError::InvalidCmdFrame),
             }
         }
