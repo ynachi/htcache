@@ -7,7 +7,7 @@ use crate::frame::Frame;
 use std::io;
 use Frame::Bulk;
 
-/// Command represents a redisy command
+/// Command represents a htcache command
 pub trait Command {
     // apply applies the command
     // @TODO: This method should take DB and Writer as args.
