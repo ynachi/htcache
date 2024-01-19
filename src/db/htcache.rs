@@ -3,14 +3,13 @@ use crate::db::{EvictionFn, EvictionPolicy, HTPage};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
+#[derive(Clone)]
 pub struct HTCache {
-    pages: Vec<RwLock<HTPage>>,
-    // number of pages
-    n_pages: usize,
-    // number of entries per page
-    n_entries: usize,
+    pages: Vec<Arc<RwLock<HTPage>>>,
+    num_pages: usize,
+    num_entries_per_page: usize,
     // eviction policy
     eviction_function: EvictionFn,
 }
@@ -24,25 +23,38 @@ impl HTCache {
 
     fn get_entry_location(&self, key: &str) -> (u64, u64) {
         let key_hash = Self::calculate_hash(&key);
-        let page_location = key_hash % self.n_pages as u64;
-        let entry_location = (key_hash / self.n_pages as u64) % self.n_entries as u64;
+
+        // assumes n_pages and n_entries are powers of 2
+        let page_bits = self.num_pages.trailing_zeros();
+        let entry_bits = self.num_entries_per_page.trailing_zeros();
+
+        let page_mask = (1 << page_bits) - 1;
+        let entry_mask = (1 << entry_bits) - 1;
+
+        // Bitwise AND with masks extracts bits
+        let page_location = key_hash & page_mask;
+        let entry_location = (key_hash >> page_bits) & entry_mask;
+
         (page_location, entry_location)
     }
 
-    pub fn new(n_pages: usize, n_entries: usize, eviction_policy: EvictionPolicy) -> Self {
-        let mut pages: Vec<RwLock<HTPage>> = Vec::with_capacity(n_pages);
+    /// new uses base 2 to compute number of pages and number of entries per page
+    pub fn new(page_space: u32, entry_space: u32, eviction_policy: EvictionPolicy) -> Self {
+        let num_pages = 2_usize.pow(page_space);
+        let num_entries_per_page = 2_usize.pow(entry_space);
+        let mut pages = Vec::with_capacity(num_pages);
 
         let eviction_function = db::get_choose_evict_fn(eviction_policy);
 
-        for _ in 0..n_pages {
-            let page = HTPage::new(n_entries, eviction_function);
-            pages.push(RwLock::new(page));
+        for _ in 0..num_pages {
+            let page = HTPage::new(num_entries_per_page, eviction_function);
+            pages.push(Arc::new(RwLock::new(page)));
         }
 
         HTCache {
             pages,
-            n_pages,
-            n_entries,
+            num_pages,
+            num_entries_per_page,
             eviction_function,
         }
     }
@@ -58,10 +70,10 @@ impl HTCache {
             .get(page_num as usize)
             .expect("this is clearly a bug as page {} should normally exist");
 
-        page.read().unwrap().get_value(entry_num as usize, key)
+        page.write().unwrap().get_value(entry_num as usize, key)
     }
 
-    pub fn set_kv(&mut self, key: &str, value: &str) {
+    pub fn set_kv(&self, key: &str, value: &str) {
         let (page_num, entry_num) = self.get_entry_location(key);
         // get the relevant page to update
         let result = self.pages.get(page_num as usize);
@@ -77,7 +89,7 @@ impl HTCache {
         }
     }
 
-    pub fn delete_entries(&mut self, keys: &[&str]) -> usize {
+    pub fn delete_entries(&self, keys: &[&str]) -> usize {
         let keys_set: HashSet<_> = keys.iter().collect();
         keys_set
             .iter()
@@ -85,7 +97,7 @@ impl HTCache {
             .sum()
     }
 
-    fn delete_key_entries(&mut self, key: &&str) -> usize {
+    fn delete_key_entries(&self, key: &&str) -> usize {
         let location = self.get_entry_location(key);
         let (page_number, entry_index) = location;
 
@@ -100,7 +112,7 @@ impl HTCache {
         // anywhere. To check.
         for entry_option in page.entries.iter_mut().skip(entry_index as usize) {
             if let Some(entry) = entry_option {
-                if entry.read().unwrap().key == **key {
+                if entry.key == **key {
                     *entry_option = None;
                     // exit here as every key should be uniq in a page
                     return 1;
@@ -114,10 +126,34 @@ impl HTCache {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Barrier;
+    use std::thread;
+
+    fn generate_gets(htcache: Arc<HTCache>, num: usize) {
+        for i in 0..num {
+            let key = format!("key{}", i);
+            htcache.get_value_for_key(&key);
+        }
+    }
+
+    fn generate_sets(htcache: Arc<HTCache>, num: usize) {
+        for i in 0..num {
+            let key = format!("key{}", i);
+            let value = format!("value{}", i);
+            htcache.set_kv(&key, &value);
+        }
+    }
+
+    fn generate_dels(htcache: Arc<HTCache>, num: usize) {
+        for i in 0..num {
+            let key = format!("key{}", i);
+            htcache.delete_entries(&[&key]);
+        }
+    }
 
     #[test]
     fn test_set_get_del() {
-        let mut cache = HTCache::new(16, 4, EvictionPolicy::RANDOM);
+        let cache = HTCache::new(4, 4, EvictionPolicy::RANDOM);
         for i in 0..10 {
             cache.set_kv(&format!("key{}", i), &format!("value{}", i))
         }
@@ -167,6 +203,48 @@ mod tests {
         // lets force eviction, it should not panic.
         for i in 0..100 {
             cache.set_kv(&format!("key{}", i), &format!("value{}", i))
+        }
+    }
+
+    #[test]
+    fn test_cache_concurrent() {
+        let num_threads = 10;
+        let cache = Arc::new(HTCache::new(16, 8, EvictionPolicy::RANDOM));
+        let barrier = Arc::new(Barrier::new(num_threads));
+        let mut handles = vec![];
+
+        for _ in 0..4 {
+            let cache = Arc::clone(&cache);
+            let barrier = Arc::clone(&barrier);
+            let handle = thread::spawn(move || {
+                barrier.wait();
+                generate_sets(cache, 150);
+            });
+            handles.push(handle);
+        }
+
+        for _ in 0..4 {
+            let cache = Arc::clone(&cache);
+            let barrier = Arc::clone(&barrier);
+            let handle = thread::spawn(move || {
+                barrier.wait();
+                generate_gets(cache, 200);
+            });
+            handles.push(handle);
+        }
+
+        for _ in 0..2 {
+            let cache = Arc::clone(&cache);
+            let barrier = Arc::clone(&barrier);
+            let handle = thread::spawn(move || {
+                barrier.wait();
+                generate_dels(cache, 100);
+            });
+            handles.push(handle);
+        }
+
+        for handle in handles {
+            handle.join().unwrap();
         }
     }
 }

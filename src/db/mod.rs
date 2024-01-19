@@ -32,9 +32,18 @@ impl HTPageEntry {
             expires_at,
         }
     }
+
+    fn increment_frequency(&mut self) {
+        self.freq_count += 1
+    }
+
+    fn update_fields(&mut self, value: &str) {
+        self.value = value.to_string();
+        self.increment_frequency();
+    }
 }
 
-pub type EvictionFn = fn(&mut Vec<Option<RwLock<HTPageEntry>>>, key: &str, value: &str);
+pub type EvictionFn = fn(&mut Vec<Option<HTPageEntry>>, key: &str, value: &str);
 
 /// get_choose_evict_fn returns a evict replace and evict function. Our eviction strategy is to replace a kv by an
 /// incoming one, when we could not find a suitable place for it.
@@ -47,19 +56,19 @@ pub fn get_choose_evict_fn(eviction_policy: EvictionPolicy) -> EvictionFn {
     }
 }
 
-fn clock_choose_evict(pages: &mut Vec<Option<RwLock<HTPageEntry>>>, key: &str, value: &str) {
+fn clock_choose_evict(pages: &mut Vec<Option<HTPageEntry>>, key: &str, value: &str) {
     unimplemented!()
     // Implement it...
 }
 
-fn lfu_choose_evict(pages: &mut Vec<Option<RwLock<HTPageEntry>>>, key: &str, value: &str) {
+fn lfu_choose_evict(pages: &mut Vec<Option<HTPageEntry>>, key: &str, value: &str) {
     unimplemented!()
 }
 
-fn lru_choose_evict(pages: &mut Vec<Option<RwLock<HTPageEntry>>>, key: &str, value: &str) {
+fn lru_choose_evict(pages: &mut Vec<Option<HTPageEntry>>, key: &str, value: &str) {
     unimplemented!()
 }
-fn random_evict_and_replace(page: &mut Vec<Option<RwLock<HTPageEntry>>>, key: &str, value: &str) {
+fn random_evict_and_replace(page: &mut Vec<Option<HTPageEntry>>, key: &str, value: &str) {
     if page.is_empty() {
         dbg!("page is empty and this should normally not happen");
         return;
@@ -71,6 +80,6 @@ fn random_evict_and_replace(page: &mut Vec<Option<RwLock<HTPageEntry>>>, key: &s
     let new_entry = HTPageEntry::new(key, value, None);
 
     if let Some(entry) = page.get_mut(index) {
-        *entry = Some(RwLock::new(new_entry));
+        *entry = Some(new_entry);
     }
 }

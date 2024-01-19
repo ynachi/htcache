@@ -13,22 +13,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="6014c35b-c356-42a3-9550-bac009aceb4d" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/redisy.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/htcache.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/htcache.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/htcache.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cmd/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/db/eviction/lfu.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/db/eviction/lru.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/db/eviction/mod.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/db/htcache.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/db/htcache.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/db/htpage.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/db/htpage.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/db/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/db/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/db/storage/map.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/db/storage/mod.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/server.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/server.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/threadpool.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/threadpool.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -77,7 +68,9 @@
   "keyToString": {
     "Cargo.Run redisy.executor": "Debug",
     "Cargo.Test connection::tests::test_read_frame.executor": "Run",
-    "Cargo.Test db::htcache::tests::test_set_get_del (1).executor": "Debug",
+    "Cargo.Test db::htcache::tests::test_cache_concurrent.executor": "Run",
+    "Cargo.Test db::htcache::tests::test_multithreaded.executor": "Run",
+    "Cargo.Test db::htcache::tests::test_set_get_del (1).executor": "Run",
     "Cargo.Test db::htcache::tests::test_set_get_del.executor": "Run",
     "Cargo.Test frame::tests.executor": "Run",
     "Cargo.Test frame::tests::test_decode.executor": "Run",
@@ -130,8 +123,25 @@
     <option name="tool" value="Clippy" />
   </component>
   <component name="RunManager" selected="Cargo.Test htcache::tests (1)">
-    <configuration name="Run redisy" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="run --package redisy --bin redisy" />
+    <configuration name="Test db::htcache::tests::test_cache_concurrent" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package htcache --lib db::htcache::tests::test_cache_concurrent -- --exact" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Test db::htcache::tests::test_multithreaded" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package htcache --lib db::htcache::tests::test_multithreaded -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
       <option name="emulateTerminal" value="true" />
@@ -149,23 +159,6 @@
     </configuration>
     <configuration name="Test db::htcache::tests::test_set_get_del (1)" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="command" value="test --package htcache --lib db::htcache::tests::test_set_get_del -- --exact" />
-      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <envs />
-      <option name="emulateTerminal" value="true" />
-      <option name="channel" value="DEFAULT" />
-      <option name="requiredFeatures" value="true" />
-      <option name="allFeatures" value="false" />
-      <option name="withSudo" value="false" />
-      <option name="buildTarget" value="REMOTE" />
-      <option name="backtrace" value="SHORT" />
-      <option name="isRedirectInput" value="false" />
-      <option name="redirectInputPath" value="" />
-      <method v="2">
-        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="Test db::htcache::tests::test_set_get_del" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package redisy --lib db::htcache::tests::test_set_get_del -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
       <option name="emulateTerminal" value="true" />
@@ -218,10 +211,10 @@
     <recent_temporary>
       <list>
         <item itemvalue="Cargo.Test htcache::tests (1)" />
+        <item itemvalue="Cargo.Test db::htcache::tests::test_cache_concurrent" />
         <item itemvalue="Cargo.Test db::htcache::tests::test_set_get_del (1)" />
+        <item itemvalue="Cargo.Test db::htcache::tests::test_multithreaded" />
         <item itemvalue="Cargo.Test htcache::tests" />
-        <item itemvalue="Cargo.Test db::htcache::tests::test_set_get_del" />
-        <item itemvalue="Cargo.Run redisy" />
       </list>
     </recent_temporary>
   </component>
@@ -281,7 +274,8 @@
       <workItem from="1705087420224" duration="902000" />
       <workItem from="1705170390079" duration="14184000" />
       <workItem from="1705196350601" duration="1150000" />
-      <workItem from="1705197516670" duration="46460000" />
+      <workItem from="1705197516670" duration="48911000" />
+      <workItem from="1705442803084" duration="32477000" />
     </task>
     <servers />
   </component>
@@ -312,7 +306,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/db/htcache.rs</url>
-          <line>168</line>
+          <line>156</line>
           <option name="timeStamp" value="16" />
         </line-breakpoint>
       </breakpoints>
