@@ -1,11 +1,11 @@
 mod htcache;
 mod htpage;
 
+pub use htcache::*;
 pub use htpage::HTPage;
 
 extern crate rand;
 use rand::Rng;
-use std::sync::RwLock;
 use std::time::Instant;
 
 pub enum EvictionPolicy {
@@ -43,7 +43,7 @@ impl HTPageEntry {
     }
 }
 
-pub type EvictionFn = fn(&mut Vec<Option<HTPageEntry>>, key: &str, value: &str);
+pub type EvictionFn = fn(&mut [Option<HTPageEntry>], key: &str, value: &str);
 
 /// get_choose_evict_fn returns a evict replace and evict function. Our eviction strategy is to replace a kv by an
 /// incoming one, when we could not find a suitable place for it.
@@ -56,19 +56,19 @@ pub fn get_choose_evict_fn(eviction_policy: EvictionPolicy) -> EvictionFn {
     }
 }
 
-fn clock_choose_evict(pages: &mut Vec<Option<HTPageEntry>>, key: &str, value: &str) {
+fn clock_choose_evict(pages: &mut [Option<HTPageEntry>], key: &str, value: &str) {
     unimplemented!()
     // Implement it...
 }
 
-fn lfu_choose_evict(pages: &mut Vec<Option<HTPageEntry>>, key: &str, value: &str) {
+fn lfu_choose_evict(pages: &mut [Option<HTPageEntry>], key: &str, value: &str) {
     unimplemented!()
 }
 
-fn lru_choose_evict(pages: &mut Vec<Option<HTPageEntry>>, key: &str, value: &str) {
+fn lru_choose_evict(pages: &mut [Option<HTPageEntry>], key: &str, value: &str) {
     unimplemented!()
 }
-fn random_evict_and_replace(page: &mut Vec<Option<HTPageEntry>>, key: &str, value: &str) {
+fn random_evict_and_replace(page: &mut [Option<HTPageEntry>], key: &str, value: &str) {
     if page.is_empty() {
         dbg!("page is empty and this should normally not happen");
         return;

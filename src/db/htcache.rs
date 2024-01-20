@@ -3,11 +3,10 @@ use crate::db::{EvictionFn, EvictionPolicy, HTPage};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex};
 
-#[derive(Clone)]
 pub struct HTCache {
-    pages: Vec<Arc<RwLock<HTPage>>>,
+    pages: Vec<Arc<Mutex<HTPage>>>,
     num_pages: usize,
     num_entries_per_page: usize,
     // eviction policy
@@ -48,7 +47,7 @@ impl HTCache {
 
         for _ in 0..num_pages {
             let page = HTPage::new(num_entries_per_page, eviction_function);
-            pages.push(Arc::new(RwLock::new(page)));
+            pages.push(Arc::new(Mutex::new(page)));
         }
 
         HTCache {
@@ -70,7 +69,7 @@ impl HTCache {
             .get(page_num as usize)
             .expect("this is clearly a bug as page {} should normally exist");
 
-        page.write().unwrap().get_value(entry_num as usize, key)
+        page.lock().unwrap().get_value(entry_num as usize, key)
     }
 
     pub fn set_kv(&self, key: &str, value: &str) {
@@ -81,8 +80,8 @@ impl HTCache {
         if let Some(page) = result {
             // mutex should not be poisoned so it is ok to panic if it happen to
             // show there is a bug in our program.
-            let mut write_guard_page = page.write().unwrap();
-            write_guard_page.insert_or_push_kv(entry_num as usize, key, value);
+            let mut guard_page = page.lock().unwrap();
+            guard_page.insert_or_push_kv(entry_num as usize, key, value);
         } else {
             // not normal, this should not happen
             eprintln!("the page number {} does not exist", page_num)
@@ -105,7 +104,7 @@ impl HTCache {
             .pages
             .get(page_number as usize)
             .unwrap()
-            .write()
+            .lock()
             .unwrap();
 
         // @TODO: check if we need to start from the beginning because maybe the eviction could insert some keys
@@ -208,37 +207,37 @@ mod tests {
 
     #[test]
     fn test_cache_concurrent() {
-        let num_threads = 10;
+        let num_threads = 70;
         let cache = Arc::new(HTCache::new(16, 8, EvictionPolicy::RANDOM));
         let barrier = Arc::new(Barrier::new(num_threads));
         let mut handles = vec![];
 
-        for _ in 0..4 {
+        for _ in 0..50 {
             let cache = Arc::clone(&cache);
             let barrier = Arc::clone(&barrier);
             let handle = thread::spawn(move || {
                 barrier.wait();
-                generate_sets(cache, 150);
+                generate_sets(cache, 5000000);
             });
             handles.push(handle);
         }
 
-        for _ in 0..4 {
+        for _ in 0..10 {
             let cache = Arc::clone(&cache);
             let barrier = Arc::clone(&barrier);
             let handle = thread::spawn(move || {
                 barrier.wait();
-                generate_gets(cache, 200);
+                generate_gets(cache, 30000);
             });
             handles.push(handle);
         }
 
-        for _ in 0..2 {
+        for _ in 0..10 {
             let cache = Arc::clone(&cache);
             let barrier = Arc::clone(&barrier);
             let handle = thread::spawn(move || {
                 barrier.wait();
-                generate_dels(cache, 100);
+                generate_dels(cache, 10000);
             });
             handles.push(handle);
         }

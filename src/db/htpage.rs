@@ -1,6 +1,5 @@
 use crate::db::EvictionFn;
 use crate::db::HTPageEntry;
-use std::sync::{RwLock, RwLockWriteGuard};
 
 pub struct HTPage {
     pub entries: Vec<Option<HTPageEntry>>,
@@ -20,6 +19,10 @@ impl HTPage {
     }
 
     pub fn get_value(&mut self, index: usize, key: &str) -> Option<String> {
+        self.find_and_refresh(index, key)
+    }
+
+    fn find_and_refresh(&mut self, index: usize, key: &str) -> Option<String> {
         self.entries
             .iter_mut()
             .skip(index)
@@ -45,21 +48,16 @@ impl HTPage {
             return;
         }
 
-        if !Self::probe_for_empty_slot(&mut self.entries, index, key, value) {
+        if !self.find_and_fill_empty_slot(index, key, value) {
             // handle eviction
             (self.evict_and_replace)(&mut self.entries, key, value);
         }
     }
 
-    fn probe_for_empty_slot(
-        entries: &mut [Option<HTPageEntry>],
-        index: usize,
-        key: &str,
-        value: &str,
-    ) -> bool {
-        if let Some(x) = entries.iter_mut().skip(index).find(|x| x.is_none()) {
+    fn find_and_fill_empty_slot(&mut self, index: usize, key: &str, value: &str) -> bool {
+        if let Some(empty_slot) = self.entries.iter_mut().skip(index).find(|x| x.is_none()) {
             let new_entry = HTPageEntry::new(key, value, None);
-            x.replace(new_entry);
+            empty_slot.replace(new_entry);
             return true;
         }
         false

@@ -1,14 +1,15 @@
 use crate::cmd::{get_name, ping, Command};
-use crate::error;
 use crate::frame::Frame;
+use crate::{db, error};
 use std::io::Write;
+use std::sync::Arc;
 
 pub struct Ping {
     message: Option<String>,
 }
 
 impl Command for Ping {
-    fn apply<T: Write>(&self, dest: &mut T) -> std::io::Result<()> {
+    fn apply<T: Write>(&self, dest: &mut T, _: &Arc<db::HTCache>) -> std::io::Result<()> {
         let response = if self.message.is_none() {
             Frame::Simple("PONG".into())
         } else {
@@ -25,7 +26,7 @@ impl Command for Ping {
                     return Err(error::CommandError::MalformedPing);
                 }
 
-                let mut cmd = ping::new();
+                let mut cmd = new();
                 if content.len() == 1 {
                     return Ok(cmd);
                 }

@@ -1,10 +1,10 @@
-pub mod config;
 pub mod ping;
 pub mod set;
 
-use crate::error;
 use crate::frame::Frame;
+use crate::{db, error};
 use std::io;
+use std::sync::Arc;
 use Frame::Bulk;
 
 /// Command represents a htcache command
@@ -12,7 +12,7 @@ pub trait Command {
     // apply applies the command
     // @TODO: This method should take DB and Writer as args.
     // Will do after I define them.
-    fn apply<T: io::Write>(&self, dest: &mut T) -> io::Result<()>;
+    fn apply<T: io::Write>(&self, dest: &mut T, htcache: &Arc<db::HTCache>) -> io::Result<()>;
 
     /// from read forms the command from a frame
     fn from(frame: &Frame) -> Result<Self, error::CommandError>
