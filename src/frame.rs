@@ -3,14 +3,14 @@
 
 use crate::error::FrameError;
 use std::cmp::Ordering;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::io;
 use std::io::{BufRead, BufReader, Read};
 
 const MAX_ITEM_SIZE: usize = 4 * 1024;
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum Frame {
     Simple(String),
     Error(String),
@@ -554,7 +554,7 @@ mod tests {
         // non number should fail
         let got = decode(&mut rd);
         match got {
-            Err(FrameError::InvalidFrame) => {}
+            Err(FrameError::IntFromUTF8(_)) => {}
             _ => panic!("Expected an Err FrameError"),
         }
         // Should be properly terminated

@@ -3,7 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/go-benchmark.iml" filepath="$PROJECT_DIR$/go-benchmark.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/redisy.iml" filepath="$PROJECT_DIR$/.idea/redisy.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/htcache.iml" filepath="$PROJECT_DIR$/.idea/htcache.iml" />
     </modules>
   </component>
 </project>

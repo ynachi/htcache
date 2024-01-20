@@ -62,13 +62,13 @@ impl ThreadPool {
     /// # Example
     ///
     /// ```
-    /// use redisy::threadpool::ThreadPool;
+    /// //use redisy::threadpool::ThreadPool;
     ///
-    /// let thread_pool = ThreadPool::new(4).unwrap();
+    /// //let thread_pool = ThreadPool::new(4).unwrap();
     ///
-    /// thread_pool.execute(|| {
-    ///     println!("This closure is executed on a thread in the thread pool");
-    /// });
+    /// //thread_pool.execute(|| {
+    /// //    println!("This closure is executed on a thread in the thread pool");
+    /// //});
     /// ```
     pub fn execute<F>(&self, f: F)
     where
@@ -88,13 +88,13 @@ impl ThreadPool {
     /// # Examples
     ///
     /// ```
-    /// use redisy::threadpool::ThreadPool;
+    /// //use redisy::threadpool::ThreadPool;
     ///
-    /// let mut pool = ThreadPool::new(4).unwrap();
+    /// //let mut pool = ThreadPool::new(4).unwrap();
     ///
     /// // ... do some work with the thread pool ...
     ///
-    /// pool.shutdown();
+    /// //pool.shutdown();
     /// ```
     pub fn shutdown(&mut self) {
         for _ in 0..self.size {

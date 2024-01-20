@@ -20,15 +20,15 @@ pub struct Connection {
     conn: TcpStream,
     reader: BufReader<TcpStream>,
     writer: BufWriter<TcpStream>,
-    // a connection receive an atomic reference of a cache struct to operate on.
-    // cache: Arc<db::Cache<S, E>>,
+    // a connection receive a reference of a Cache.
+    htcache: Arc<db::HTCache>,
 }
 
 impl Connection {
     pub fn close(&self) -> io::Result<()> {
         self.conn.shutdown(Shutdown::Both)
     }
-    pub fn new(stream: TcpStream) -> io::Result<Self> {
+    pub fn new(stream: TcpStream, htcache: Arc<db::HTCache>) -> io::Result<Self> {
         // set write timeout on the stream as we won't be using async for now
         stream.set_write_timeout(WRITE_TIMEOUT)?;
         // stream_clone is a reference count for stream
@@ -38,6 +38,7 @@ impl Connection {
             conn: stream,
             reader: BufReader::new(read_clone),
             writer: BufWriter::new(write_clone),
+            htcache,
         })
     }
 
@@ -80,10 +81,7 @@ impl Connection {
         // 2. Get the command name
         let cmd_name = cmd::get_name(&frame);
         match cmd_name {
-            Ok(cmd_name) => {
-                // @TODO add db later
-                self.apply_command(&cmd_name, &frame)
-            }
+            Ok(cmd_name) => self.apply_command(&cmd_name, &frame),
             Err(e) => self.send_error(&e),
         }
         Ok(())
@@ -95,9 +93,11 @@ impl Connection {
     {
         match Cmd::from(frame) {
             Ok(command) => {
-                command.apply(&mut self.writer).unwrap_or_else(|err| {
-                    eprintln!("error writing response to client: {}", err);
-                });
+                command
+                    .apply(&mut self.writer, &self.htcache)
+                    .unwrap_or_else(|err| {
+                        eprintln!("error writing response to client: {}", err);
+                    });
             }
             Err(err) => self.send_error(&err),
         }
@@ -105,8 +105,10 @@ impl Connection {
 
     fn apply_command(&mut self, cmd_name: &str, frame: &Frame) {
         match cmd_name {
-            "PING" => self.execute_command::<cmd::ping::Ping>(frame),
-            "CONFIG" => self.execute_command::<cmd::config::Config>(frame),
+            "PING" => self.execute_command::<cmd::Ping>(frame),
+            "SET" => self.execute_command::<cmd::Set>(frame),
+            "GET" => self.execute_command::<cmd::Get>(frame),
+            "DEL" => self.execute_command::<cmd::Del>(frame),
             _ => self.send_error(&CommandError::Unknown(cmd_name.to_string())),
         }
     }

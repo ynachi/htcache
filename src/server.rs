@@ -3,34 +3,15 @@ use crate::threadpool;
 use crate::{connection, db};
 use std::io;
 use std::net::TcpListener;
+use std::sync::Arc;
 
-pub struct Server<S: db::Storage, E: db::Eviction> {
+pub struct Server {
     thread_pool: threadpool::ThreadPool,
-    listener: TcpListener,
-    cache: db::Cache<S, E>,
+    tcp_listener: TcpListener,
+    htcache: Arc<db::HTCache>,
     // @ TODO: uncomment and implement
     // max_connection: AtomicUsize,
     // is_shutdown: AtomicBool,
-}
-
-/// create_storage_type create storage type from name.
-/// We fallback to a default storage if the given nme is not valid.
-pub fn create_storage_type(name: &str) -> db::storage::StorageType {
-    match name {
-        "MAP" => db::storage::StorageType::Map,
-        // default to map
-        _ => db::storage::StorageType::Map,
-    }
-}
-
-/// create_eviction_type creates eviction type from name.
-/// We fallback to a default eviction if the given nme is not valid.
-pub fn create_eviction_type(name: &str) -> db::eviction::EvictionPolicyType {
-    match name {
-        "LFU" => db::eviction::EvictionPolicyType::LFU,
-        // Default to LFU
-        _ => db::eviction::EvictionPolicyType::LFU,
-    }
 }
 
 /// `create_server` return a Result instead of the actual type.
@@ -41,36 +22,25 @@ pub fn create_server(
     server_ip: String,
     server_port: u16,
     worker_count: usize,
-    max_size: usize,
-    storage_name: &str,
-    eviction_policy: &str,
-) -> io::Result<Server<impl db::Storage, impl db::Eviction>> {
-    let pool = threadpool::ThreadPool::new(worker_count)?;
+    page_space: u32,
+    entry_space: u32,
+    eviction_policy: db::EvictionPolicy,
+) -> io::Result<Server> {
+    let thread_pool = threadpool::ThreadPool::new(worker_count)?;
     let tcp_listener = TcpListener::bind((server_ip, server_port))?;
-    let storage = create_storage_type(storage_name);
-    let eviction = create_eviction_type(eviction_policy);
-    let server_storage = db::storage::create_storage(storage, max_size);
-    let server_eviction = db::eviction::create_eviction_policy(eviction);
-    let cache = db::create_cache(server_storage, server_eviction);
-    build_server(pool, tcp_listener, cache)
-}
 
-fn build_server<S: db::Storage, E: db::Eviction>(
-    thread_pool: threadpool::ThreadPool,
-    listener: TcpListener,
-    cache: db::Cache<S, E>,
-) -> io::Result<Server<impl db::Storage, impl db::Eviction>> {
+    let htcache = Arc::new(db::HTCache::new(page_space, entry_space, eviction_policy));
     Ok(Server {
         thread_pool,
-        listener,
-        cache,
+        tcp_listener,
+        htcache,
     })
 }
 
-impl<S: db::Storage, E: db::Eviction> Server<S, E> {
+impl Server {
     /// listen listens to incoming connections and process them.
     pub fn listen(&self) {
-        for stream in self.listener.incoming() {
+        for stream in self.tcp_listener.incoming() {
             let stream = match stream {
                 Ok(stream) => stream,
                 Err(e) => {
@@ -79,7 +49,8 @@ impl<S: db::Storage, E: db::Eviction> Server<S, E> {
                 }
             };
 
-            let mut conn = match connection::Connection::new(stream) {
+            let htcache = Arc::clone(&self.htcache);
+            let mut conn = match connection::Connection::new(stream, htcache) {
                 Ok(conn) => conn,
                 Err(e) => {
                     self.log_error("failed to create connection object", e);
