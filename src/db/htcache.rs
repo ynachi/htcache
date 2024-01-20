@@ -88,7 +88,7 @@ impl HTCache {
         }
     }
 
-    pub fn delete_entries(&self, keys: &[&str]) -> usize {
+    pub fn delete_entries(&self, keys: &Vec<String>) -> usize {
         let keys_set: HashSet<_> = keys.iter().collect();
         keys_set
             .iter()
@@ -96,7 +96,7 @@ impl HTCache {
             .sum()
     }
 
-    fn delete_key_entries(&self, key: &&str) -> usize {
+    fn delete_key_entries(&self, key: &&String) -> usize {
         let location = self.get_entry_location(key);
         let (page_number, entry_index) = location;
 
@@ -146,7 +146,7 @@ mod tests {
     fn generate_dels(htcache: Arc<HTCache>, num: usize) {
         for i in 0..num {
             let key = format!("key{}", i);
-            htcache.delete_entries(&[&key]);
+            htcache.delete_entries(&vec![key]);
         }
     }
 
@@ -176,9 +176,9 @@ mod tests {
         );
 
         // test delete key
-        let deleted_num = cache.delete_entries(&["key1"]);
+        let deleted_num = cache.delete_entries(&vec!["key1".into()]);
         assert_eq!(deleted_num, 1, "one key should be deleted");
-        let deleted_num = cache.delete_entries(&["key1"]);
+        let deleted_num = cache.delete_entries(&vec!["key1".into()]);
         assert_eq!(
             deleted_num, 0,
             "0 key should be deleted as it was deleted before"

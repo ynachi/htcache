@@ -14,17 +14,13 @@
   <component name="ChangeListManager">
     <list default="true" id="6014c35b-c356-42a3-9550-bac009aceb4d" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cmd/config.rs" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/cmd/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/cmd/ping.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/ping.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/cmd/set.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/set.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/connection.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/connection.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/db/htcache.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/db/htcache.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/db/htpage.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/db/htpage.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/db/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/db/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/error.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/frame.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/server.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/server.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -37,8 +33,8 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Rust File" />
         <option value="Go File" />
+        <option value="Rust File" />
       </list>
     </option>
   </component>
@@ -69,57 +65,57 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Cargo.Run htcache.executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Run redisy.executor&quot;: &quot;Debug&quot;,
-    &quot;Cargo.Test connection::tests::test_read_frame.executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Test db::htcache::tests::test_cache_concurrent.executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Test db::htcache::tests::test_multithreaded.executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Test db::htcache::tests::test_set_get_del (1).executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Test db::htcache::tests::test_set_get_del.executor&quot;: &quot;Profiler&quot;,
-    &quot;Cargo.Test frame::tests.executor&quot;: &quot;Profiler&quot;,
-    &quot;Cargo.Test frame::tests::test_decode.executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Test frame::tests::test_decode_array.executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Test frame::tests::test_decode_bool.executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Test frame::tests::test_decode_bulk.executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Test frame::tests::test_decode_error.executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Test frame::tests::test_decode_integer.executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Test frame::tests::test_decode_simple_string.executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Test frame::tests::test_frame_fmt.executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Test frame::tests::test_read_until_crlf_bulk.executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Test frame::tests::test_read_until_crlf_simple.executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Test htcache::tests (1).executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Test htcache::tests.executor&quot;: &quot;Profiler&quot;,
-    &quot;DefaultGoTemplateProperty&quot;: &quot;Go File&quot;,
-    &quot;Go Test.BenchmarkRedisPing in go-benchmark.executor&quot;: &quot;Run&quot;,
-    &quot;Go Test.BenchmarkRedisSet in go-benchmark.executor&quot;: &quot;Profiler#3&quot;,
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.RadMigrateCodeStyle&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.modules.automatic.dependencies.download&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
-    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;dev/htcache2&quot;,
-    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
-    &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/ynachi/codes/github.com/htcache&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Cargo.Run htcache.executor": "Debug",
+    "Cargo.Run redisy.executor": "Debug",
+    "Cargo.Test connection::tests::test_read_frame.executor": "Run",
+    "Cargo.Test db::htcache::tests::test_cache_concurrent.executor": "Run",
+    "Cargo.Test db::htcache::tests::test_multithreaded.executor": "Run",
+    "Cargo.Test db::htcache::tests::test_set_get_del (1).executor": "Run",
+    "Cargo.Test db::htcache::tests::test_set_get_del.executor": "Profiler",
+    "Cargo.Test frame::tests.executor": "Profiler",
+    "Cargo.Test frame::tests::test_decode.executor": "Run",
+    "Cargo.Test frame::tests::test_decode_array.executor": "Run",
+    "Cargo.Test frame::tests::test_decode_bool.executor": "Run",
+    "Cargo.Test frame::tests::test_decode_bulk.executor": "Run",
+    "Cargo.Test frame::tests::test_decode_error.executor": "Run",
+    "Cargo.Test frame::tests::test_decode_integer.executor": "Run",
+    "Cargo.Test frame::tests::test_decode_simple_string.executor": "Run",
+    "Cargo.Test frame::tests::test_frame_fmt.executor": "Run",
+    "Cargo.Test frame::tests::test_read_until_crlf_bulk.executor": "Run",
+    "Cargo.Test frame::tests::test_read_until_crlf_simple.executor": "Run",
+    "Cargo.Test htcache::tests (1).executor": "Run",
+    "Cargo.Test htcache::tests.executor": "Profiler",
+    "DefaultGoTemplateProperty": "Go File",
+    "Go Test.BenchmarkRedisPing in go-benchmark.executor": "Run",
+    "Go Test.BenchmarkRedisSet in go-benchmark.executor": "Profiler#3",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.RadMigrateCodeStyle": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.migrated.go.modules.settings": "true",
+    "RunOnceActivity.go.modules.automatic.dependencies.download": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "git-widget-placeholder": "dev/htcache2",
+    "go.import.settings.migrated": "true",
+    "go.sdk.automatically.set": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "/Users/ynachi/codes/github.com/htcache",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/src/db/storage" />
@@ -130,7 +126,7 @@
     <option name="runOnTheFly" value="true" />
     <option name="tool" value="Clippy" />
   </component>
-  <component name="RunManager" selected="Cargo.Test db::htcache::tests::test_set_get_del">
+  <component name="RunManager" selected="Cargo.Run htcache">
     <configuration name="Run htcache" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="command" value="run --package htcache --bin htcache" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -218,11 +214,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Cargo.Run htcache" />
         <item itemvalue="Cargo.Test db::htcache::tests::test_set_get_del" />
         <item itemvalue="Cargo.Test htcache::tests" />
         <item itemvalue="Cargo.Test frame::tests" />
         <item itemvalue="Cargo.Test db::htcache::tests::test_cache_concurrent" />
-        <item itemvalue="Cargo.Run htcache" />
       </list>
     </recent_temporary>
   </component>
@@ -311,14 +307,15 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/cmd/mod.rs</url>
-          <line>15</line>
-          <option name="timeStamp" value="13" />
+          <line>50</line>
+          <option name="timeStamp" value="19" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
     <watches-manager>
       <configuration name="CargoCommandRunConfiguration">
         <watch expression="buff[buff.len() - 2]" language="Rust" />
+        <watch expression="content.len() &lt; min_args_len" language="Rust" />
       </configuration>
     </watches-manager>
   </component>

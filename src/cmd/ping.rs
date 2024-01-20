@@ -1,6 +1,6 @@
-use crate::cmd::{get_name, ping, Command};
+use crate::cmd::Command;
 use crate::frame::Frame;
-use crate::{db, error};
+use crate::{cmd, db, error};
 use std::io::Write;
 use std::sync::Arc;
 
@@ -19,25 +19,15 @@ impl Command for Ping {
     }
 
     fn from(frame: &Frame) -> Result<Self, error::CommandError> {
-        let cmd_name = get_name(frame)?;
-        match frame {
-            Frame::Array(content) => {
-                if cmd_name.to_ascii_uppercase() != "PING" || content.len() > 2 {
-                    return Err(error::CommandError::MalformedPing);
-                }
-
-                let mut cmd = new();
-                if content.len() == 1 {
-                    return Ok(cmd);
-                }
-
-                if let Frame::Bulk(value) = &content[1] {
-                    cmd.message = Some(value.into());
-                }
-                Ok(cmd)
-            }
-            _ => Err(error::CommandError::NotCmdFrame),
+        let content = cmd::check_cmd_frame(frame, 1, Some(2), "SET")?;
+        let mut cmd = new();
+        if content.len() == 1 {
+            return Ok(cmd);
         }
+        if let Frame::Bulk(value) = &content[1] {
+            cmd.message = Some(value.into());
+        }
+        Ok(cmd)
     }
 }
 

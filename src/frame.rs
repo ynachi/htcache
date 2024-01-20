@@ -10,7 +10,7 @@ use std::io::{BufRead, BufReader, Read};
 
 const MAX_ITEM_SIZE: usize = 4 * 1024;
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum Frame {
     Simple(String),
     Error(String),

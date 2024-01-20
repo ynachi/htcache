@@ -1,4 +1,5 @@
-use crate::cmd::{get_name, Command};
+use crate::cmd;
+use crate::cmd::Command;
 use crate::frame::Frame;
 use crate::{db, error};
 use std::io::Write;
@@ -17,23 +18,15 @@ impl Command for Set {
     }
 
     fn from(frame: &Frame) -> Result<Self, error::CommandError> {
-        let cmd_name = get_name(frame)?;
-        match frame {
-            Frame::Array(content) => {
-                if cmd_name.to_ascii_uppercase() != "SET" {
-                    return Err(error::CommandError::MalformedPing);
-                }
-                let mut cmd = new();
-                if let Frame::Bulk(value) = &content[1] {
-                    cmd.key = value.to_string();
-                }
-                if let Frame::Bulk(value) = &content[2] {
-                    cmd.value = value.to_string();
-                }
-                Ok(cmd)
-            }
-            _ => Err(error::CommandError::NotCmdFrame),
+        let content = cmd::check_cmd_frame(frame, 3, Some(3), "SET")?;
+        let mut cmd = new();
+        if let Frame::Bulk(value) = &content[1] {
+            cmd.key = value.to_string();
         }
+        if let Frame::Bulk(value) = &content[2] {
+            cmd.value = value.to_string();
+        }
+        Ok(cmd)
     }
 }
 

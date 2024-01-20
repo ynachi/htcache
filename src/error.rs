@@ -54,7 +54,7 @@ impl From<ParseIntError> for FrameError {
 pub enum CommandError {
     NotCmdFrame,
     Unknown(String),
-    MalformedPing,
+    Malformed(String), // string is command name
     InvalidCmdFrame,
     Connection,
     FrameDecode(FrameError), // this variant is a wrapper of FrameError
@@ -69,8 +69,8 @@ impl Display for CommandError {
             CommandError::Unknown(cmd_name) => {
                 write!(f, "unknown command: {}", cmd_name)
             }
-            CommandError::MalformedPing => {
-                write!(f, "ping command is invalid: malformed")
+            CommandError::Malformed(name) => {
+                write!(f, "'{}' command is invalid: malformed", name)
             }
             CommandError::InvalidCmdFrame => {
                 write!(f, "frame is an array but cannot be a valid command")

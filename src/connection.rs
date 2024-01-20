@@ -81,10 +81,7 @@ impl Connection {
         // 2. Get the command name
         let cmd_name = cmd::get_name(&frame);
         match cmd_name {
-            Ok(cmd_name) => {
-                // @TODO add db later
-                self.apply_command(&cmd_name, &frame)
-            }
+            Ok(cmd_name) => self.apply_command(&cmd_name, &frame),
             Err(e) => self.send_error(&e),
         }
         Ok(())
@@ -108,8 +105,10 @@ impl Connection {
 
     fn apply_command(&mut self, cmd_name: &str, frame: &Frame) {
         match cmd_name {
-            "PING" => self.execute_command::<cmd::ping::Ping>(frame),
-            "SET" => self.execute_command::<cmd::set::Set>(frame),
+            "PING" => self.execute_command::<cmd::Ping>(frame),
+            "SET" => self.execute_command::<cmd::Set>(frame),
+            "GET" => self.execute_command::<cmd::Get>(frame),
+            "DEL" => self.execute_command::<cmd::Del>(frame),
             _ => self.send_error(&CommandError::Unknown(cmd_name.to_string())),
         }
     }
