@@ -1,9 +1,11 @@
-use crate::error::{CommandError, FrameError};
+use crate::error::{CommandError, FrameError, HandleCommandError};
 use crate::threadpool;
 use crate::{connection, db};
+use std::fmt::Debug;
 use std::io;
 use std::net::TcpListener;
 use std::sync::Arc;
+use tracing::{debug, error, info};
 
 #[derive(Debug)]
 pub struct Server {
@@ -30,6 +32,8 @@ pub fn create_server(
     let thread_pool = threadpool::ThreadPool::new(worker_count)?;
     let tcp_listener = TcpListener::bind((server_ip, server_port))?;
 
+    info!("htcache server initialized");
+
     let htcache = Arc::new(db::HTCache::new(page_space, entry_space, eviction_policy));
     Ok(Server {
         thread_pool,
@@ -41,10 +45,18 @@ pub fn create_server(
 impl Server {
     /// listen listens to incoming connections and process them.
     pub fn listen(&self) {
+        // show server's info to the user
+        info!("{:?}", self);
+        info!("htcache server ready for new connections");
+
         for stream in self.tcp_listener.incoming() {
             let stream = match stream {
                 Ok(stream) => stream,
                 Err(e) => {
+                    error!(
+                        error_message = e.to_string(),
+                        "failed to establish connection"
+                    );
                     self.log_error("failed to establish connection", e);
                     continue;
                 }
@@ -52,7 +64,13 @@ impl Server {
 
             let htcache = Arc::clone(&self.htcache);
             let mut conn = match connection::Connection::new(stream, htcache) {
-                Ok(conn) => conn,
+                Ok(conn) => {
+                    debug!(
+                        remote_address = conn.get_client_ip(),
+                        "new connection created"
+                    );
+                    conn
+                }
                 Err(e) => {
                     self.log_error("failed to create connection object", e);
                     continue;
@@ -65,7 +83,7 @@ impl Server {
     }
 
     fn log_error(&self, message: &str, error: impl std::fmt::Display) {
-        eprintln!("{}: {}", message, error);
+        error!(error_message = error.to_string(), message);
     }
 }
 
@@ -73,9 +91,19 @@ fn handle_connection(conn: &mut connection::Connection) {
     loop {
         match conn.handle_command() {
             Ok(_) => {}
-            Err(FrameError::EOF) => break,
+            Err(HandleCommandError::Frame(FrameError::EOF)) => {
+                debug!(
+                    remote_address = conn.get_client_ip(),
+                    "client gracefully closed connection"
+                );
+                break;
+            }
             Err(e) => {
-                conn.send_error(&CommandError::FrameDecode(e));
+                debug!(
+                    // Internal error, log but don't send to client.
+                    error_message = e.to_string(),
+                    "error processing command  frame or name"
+                );
             }
         };
     }

@@ -11,7 +11,7 @@ repository = "https://github.com/ynachi/htcache"
 
 [dependencies]
 rand = { version = "0.8.5", features = [] }
-tracing = "0.1"
+tracing = { version = "0.1", features = [] }
 tracing-subscriber = "0.3"
 opentelemetry-otlp = { version = "0.14", optional = true }
 # Implements the types defined in the OTel spec

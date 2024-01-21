@@ -1,6 +1,6 @@
 use crate::cmd::{self, Command};
-use crate::error::CommandError;
 use crate::error::FrameError;
+use crate::error::{CommandError, HandleCommandError};
 use crate::frame::Frame;
 use crate::{db, frame};
 use std::io;
@@ -8,6 +8,7 @@ use std::io::{BufReader, BufWriter, Write};
 use std::net::{Shutdown, TcpStream};
 use std::sync::Arc;
 use std::time::Duration;
+use tracing::{debug, error};
 
 /// The client should give up after timeout attempt to write to the stream.
 //@TODO: Set as application config
@@ -56,11 +57,12 @@ impl Connection {
     }
 
     /// send_error sends an error response to the client
-    pub fn send_error(&mut self, err: &CommandError) {
+    pub fn send_error(&mut self, err: &HandleCommandError) {
         let err_frame = Frame::Error(err.to_string());
         if let Err(e) = self.write_frame(&err_frame) {
-            eprintln!("failed to send error to client: {}", e);
+            error!("failed to send error to client: {}", e);
         }
+        debug!("command processing failed: {}", err)
     }
 
     /// get_client_ip retrieves the IP of the client. It returns unknown_ip if it cannot get it.
@@ -73,17 +75,12 @@ impl Connection {
     /// handle_command try to retrieve a command from a connection and process it.
     /// All command related errors are sent as response to the client and the rest
     /// are return to the caller for further processing.
-    pub fn handle_command(&mut self) -> Result<(), FrameError> {
-        //1. get frame fist
+    pub fn handle_command(&mut self) -> Result<(), HandleCommandError> {
+        // get frame fist
         let frame = self.read_frame()?;
-        // @TODO uncomment to debug
-        // println!("{}", frame); // @TODO: remove me after debug
-        // 2. Get the command name
-        let cmd_name = cmd::get_name(&frame);
-        match cmd_name {
-            Ok(cmd_name) => self.apply_command(&cmd_name, &frame),
-            Err(e) => self.send_error(&e),
-        }
+        debug!("received command frame: {:?}", frame);
+        let cmd_name = cmd::get_name(&frame)?;
+        self.apply_command(&cmd_name, &frame);
         Ok(())
     }
 
@@ -96,10 +93,15 @@ impl Connection {
                 command
                     .apply(&mut self.writer, &self.htcache)
                     .unwrap_or_else(|err| {
-                        eprintln!("error writing response to client: {}", err);
+                        // This error happen when things cannot be written to the connection
+                        // So it is not useful to try to send it to the client over the connection.
+                        error!(
+                            error_message = err.to_string(),
+                            "error writing response to client"
+                        );
                     });
             }
-            Err(err) => self.send_error(&err),
+            Err(err) => self.send_error(&HandleCommandError::Command(err)),
         }
     }
 
@@ -109,10 +111,9 @@ impl Connection {
             "SET" => self.execute_command::<cmd::Set>(frame),
             "GET" => self.execute_command::<cmd::Get>(frame),
             "DEL" => self.execute_command::<cmd::Del>(frame),
-            _ => self.send_error(&CommandError::Unknown(cmd_name.to_string())),
+            _ => self.send_error(&HandleCommandError::Command(CommandError::Unknown(
+                cmd_name.to_string(),
+            ))),
         }
     }
 }
-
-#[cfg(test)]
-mod tests {}
