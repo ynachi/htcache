@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display, Formatter, Result};
-use std::io;
 use std::num::ParseIntError;
 use std::string::FromUtf8Error;
+use std::{fmt, io};
 
 #[derive(Debug)]
 pub enum FrameError {
@@ -81,6 +81,34 @@ impl Display for CommandError {
             CommandError::FrameDecode(e) => {
                 write!(f, "{}", e)
             }
+        }
+    }
+}
+
+// Combine command and Frame errors.
+// This is required because while processing commands, both error types could occur.
+pub enum HandleCommandError {
+    Frame(FrameError),
+    Command(CommandError),
+}
+
+impl From<FrameError> for HandleCommandError {
+    fn from(error: FrameError) -> Self {
+        HandleCommandError::Frame(error)
+    }
+}
+
+impl From<CommandError> for HandleCommandError {
+    fn from(error: CommandError) -> Self {
+        HandleCommandError::Command(error)
+    }
+}
+
+impl Display for HandleCommandError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            HandleCommandError::Frame(err) => write!(f, "{}", err),
+            HandleCommandError::Command(err) => write!(f, "{}", err),
         }
     }
 }
