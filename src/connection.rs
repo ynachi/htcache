@@ -60,8 +60,9 @@ impl Connection {
     pub fn send_error(&mut self, err: &HandleCommandError) {
         let err_frame = Frame::Error(err.to_string());
         if let Err(e) = self.write_frame(&err_frame) {
-            eprintln!("failed to send error to client: {}", e);
+            error!("failed to send error to client: {}", e);
         }
+        debug!("command processing failed: {}", err)
     }
 
     /// get_client_ip retrieves the IP of the client. It returns unknown_ip if it cannot get it.
@@ -75,7 +76,7 @@ impl Connection {
     /// All command related errors are sent as response to the client and the rest
     /// are return to the caller for further processing.
     pub fn handle_command(&mut self) -> Result<(), HandleCommandError> {
-        //1. get frame fist
+        // get frame fist
         let frame = self.read_frame()?;
         debug!("received command frame: {:?}", frame);
         let cmd_name = cmd::get_name(&frame)?;
@@ -92,6 +93,8 @@ impl Connection {
                 command
                     .apply(&mut self.writer, &self.htcache)
                     .unwrap_or_else(|err| {
+                        // This error happen when things cannot be written to the connection
+                        // So it is not useful to try to send it to the client over the connection.
                         error!(
                             error_message = err.to_string(),
                             "error writing response to client"

@@ -45,8 +45,10 @@ pub fn create_server(
 impl Server {
     /// listen listens to incoming connections and process them.
     pub fn listen(&self) {
+        // show server's info to the user
         info!("{:?}", self);
         info!("htcache server ready for new connections");
+
         for stream in self.tcp_listener.incoming() {
             let stream = match stream {
                 Ok(stream) => stream,
@@ -97,8 +99,11 @@ fn handle_connection(conn: &mut connection::Connection) {
                 break;
             }
             Err(e) => {
-                debug!(error_message = e.to_string(), "error processing command");
-                conn.send_error(&e);
+                debug!(
+                    // Internal error, log but don't send to client.
+                    error_message = e.to_string(),
+                    "error processing command  frame or name"
+                );
             }
         };
     }

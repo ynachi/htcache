@@ -4,6 +4,7 @@ use std::{
     sync::{mpsc, Arc, Mutex},
     thread,
 };
+use tracing::{debug, error};
 
 /// `ThreadPool` is a data structure representing a pool of threads which continuously watch
 /// for new jobs to execute until they are explicitly shutdown. This struct is not meant to be
@@ -51,6 +52,7 @@ impl ThreadPool {
         let mut workers = Vec::with_capacity(size);
         for i in 0..size {
             workers.push(Worker::new(i, receiver.clone())?);
+            debug!(worker_id = i, "worker created");
         }
 
         Ok(ThreadPool {
@@ -84,7 +86,7 @@ impl ThreadPool {
         let job = Message::Task(Box::new(f));
         match self.sender.send(job) {
             Ok(_) => {}
-            Err(e) => eprintln!("fail sending job to worker: {}", e),
+            Err(e) => error!("fail sending job to worker: {}", e),
         };
     }
 
@@ -106,12 +108,14 @@ impl ThreadPool {
     pub fn shutdown(&mut self) {
         for _ in 0..self.size {
             if let Err(e) = self.sender.send(Message::Shutdown) {
-                eprintln!("error sending Shutdown cmd: {}", e);
+                error!("error sending Shutdown cmd: {}", e);
             }
         }
         for worker in &mut self.workers {
             if let Some(thread) = worker.thread.take() {
-                thread.join().unwrap();
+                thread
+                    .join()
+                    .unwrap_or_else(|_| error!("error while joining thread"));
                 // At the end of the execution of this method, all the workers will be replace
                 // by None and the `sender` end of the channel will be drop. So running this method
                 // again would make an attempt to use a dropped `sender`. To avoid that, we
@@ -157,23 +161,19 @@ impl Worker {
 
         let thread = builder.spawn(move || {
             loop {
-                // @TODO Manager errors
                 match receiver.get_message() {
                     Message::Task(job) => {
-                        // @TODO Manage logging
-                        println!("worker {} received a job", id);
+                        debug!("worker {} received a job", id);
                         // @TODO, if this job panic, it would end the thread unexpectedly.
                         // @TODO Find a way to manage that
                         job();
                     }
                     Message::Shutdown => {
-                        // @TODO Manage logging
-                        println!("Graceful shutdown from worker {}", id);
+                        debug!("graceful shutdown from worker {}", id);
                         break;
                     }
                     Message::Error(e) => {
-                        // @TODO Manage logging
-                        eprintln!("job read error occurred from worker {}: {}", id, e);
+                        error!("job read error occurred from worker {}: {}", id, e);
                     }
                 }
             }
@@ -199,20 +199,16 @@ impl SharedReceiver {
     /// Returns a `Message` enum variant that contains either a `Task` or an `Error` message.
     ///
     fn get_message(&self) -> Message {
-        let mutex_guard = self.receiver.lock();
-        match mutex_guard {
-            Ok(mutex_guard) => mutex_guard
-                .recv()
-                .unwrap_or_else(|e| Message::Error(e.to_string())),
-            Err(e) => Message::Error(e.to_string()),
-        }
+        let mutex_guard = self.receiver.lock().unwrap();
+        mutex_guard
+            .recv()
+            .unwrap_or_else(|e| Message::Error(e.to_string()))
     }
 }
 impl Iterator for SharedReceiver {
     type Item = Message;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // @TODO Manage errors
         let guard = self.receiver.lock().unwrap();
         guard.recv().ok()
     }
