@@ -1,12 +1,23 @@
 [package]
+authors = ["Yao Achi <achi.noel@hotmail.com>"]
 name = "htcache"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+repository = "https://github.com/ynachi/htcache"
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-futures = { version = "0.3.29", features = ["thread-pool"] }
-log = "0.4.20"
 rand = { version = "0.8.5", features = [] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+opentelemetry-otlp = { version = "0.14", optional = true }
+# Implements the types defined in the OTel spec
+opentelemetry = { version = "0.21", optional = true }
+# Integration between the tracing crate and the opentelemetry crate
+tracing-opentelemetry = { version = "0.22", optional = true }
 
+[features]
+otel = ["dep:opentelemetry-otlp"]

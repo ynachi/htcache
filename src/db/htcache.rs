@@ -5,6 +5,7 @@ use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex};
 
+#[derive(Debug)]
 pub struct HTCache {
     pages: Vec<Arc<Mutex<HTPage>>>,
     num_pages: usize,

@@ -15,6 +15,7 @@ pub enum EvictionPolicy {
     RANDOM,
 }
 
+#[derive(Debug)]
 pub struct HTPageEntry {
     key: String,
     value: String,

@@ -1,6 +1,7 @@
 use crate::db::EvictionFn;
 use crate::db::HTPageEntry;
 
+#[derive(Debug)]
 pub struct HTPage {
     pub entries: Vec<Option<HTPageEntry>>,
     evict_and_replace: EvictionFn,

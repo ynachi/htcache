@@ -5,6 +5,7 @@ use std::io;
 use std::net::TcpListener;
 use std::sync::Arc;
 
+#[derive(Debug)]
 pub struct Server {
     thread_pool: threadpool::ThreadPool,
     tcp_listener: TcpListener,
