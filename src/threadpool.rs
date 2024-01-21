@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Formatter};
 use std::{
-    io,
+    io, panic,
     sync::{mpsc, Arc, Mutex},
     thread,
 };
@@ -157,32 +157,37 @@ impl Worker {
     ///
     /// An `Option` containing a `Worker` if the thread was successfully created, or `None` if the OS failed to create the thread.
     fn new(id: usize, receiver: SharedReceiver) -> io::Result<Worker> {
-        let builder = thread::Builder::new();
-
-        let thread = builder.spawn(move || {
-            loop {
-                match receiver.get_message() {
-                    Message::Task(job) => {
-                        debug!("worker {} received a job", id);
-                        // @TODO, if this job panic, it would end the thread unexpectedly.
-                        // @TODO Find a way to manage that
-                        job();
-                    }
-                    Message::Shutdown => {
-                        debug!("graceful shutdown from worker {}", id);
-                        break;
-                    }
-                    Message::Error(e) => {
-                        error!("job read error occurred from worker {}: {}", id, e);
-                    }
-                }
-            }
-        })?;
-
+        let worker_process = move || Self::process_messages(id, &receiver);
+        let thread = thread::Builder::new().spawn(worker_process)?;
         Ok(Worker {
             id,
             thread: Some(thread),
         })
+    }
+
+    fn process_messages(id: usize, receiver: &SharedReceiver) {
+        loop {
+            match receiver.get_message() {
+                Message::Task(job) => {
+                    debug!("worker {} received a job", id);
+                    let result = panic::catch_unwind(panic::AssertUnwindSafe(job));
+
+                    if result.is_err() {
+                        error!("the job caused the worker {} to panic!", id);
+                        // @TODO: maybe retry the job
+                    }
+                }
+
+                Message::Shutdown => {
+                    debug!("graceful shutdown from worker {}", id);
+                    break;
+                }
+
+                Message::Error(e) => {
+                    error!("job read error occurred from worker {}: {}", id, e);
+                }
+            }
+        }
     }
 }
 
