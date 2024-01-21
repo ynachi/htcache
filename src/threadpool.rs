@@ -20,7 +20,7 @@ pub struct ThreadPool {
 
 impl Debug for ThreadPool {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "workers={}", self.size)
+        write!(f, "ThreadPool: {{workers: {}}}", self.size)
     }
 }
 

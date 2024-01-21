@@ -18,7 +18,7 @@ impl Debug for HTCache {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "pages={}, entries per page={}",
+            "HTCache{{pages: {}, entries_per_page: {}}}",
             self.num_pages, self.num_entries_per_page
         )
     }
@@ -99,7 +99,7 @@ impl HTCache {
         }
     }
 
-    pub fn delete_entries(&self, keys: &Vec<String>) -> usize {
+    pub fn delete_entries(&self, keys: &[String]) -> usize {
         let keys_set: HashSet<_> = keys.iter().collect();
         keys_set
             .iter()
