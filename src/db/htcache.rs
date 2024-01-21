@@ -2,16 +2,26 @@ use crate::db;
 use crate::db::{EvictionFn, EvictionPolicy, HTPage};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashSet;
+use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex};
 
-#[derive(Debug)]
 pub struct HTCache {
     pages: Vec<Arc<Mutex<HTPage>>>,
     num_pages: usize,
     num_entries_per_page: usize,
     // eviction policy
     eviction_function: EvictionFn,
+}
+
+impl Debug for HTCache {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "pages={}, entries per page={}",
+            self.num_pages, self.num_entries_per_page
+        )
+    }
 }
 
 impl HTCache {

@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Formatter};
 use std::{
     io,
     sync::{mpsc, Arc, Mutex},
@@ -11,11 +12,16 @@ use std::{
 /// drop trait implementation for `ThreadPool`). A `ThreadPool` should ne terminated by calling
 /// the `shutdown` method. Not doing so will cause the program to panic. This was a design
 /// choice to allow the programmer to explicitly shutdown a `ThreadPool` when needed.
-#[derive(Debug)]
 pub struct ThreadPool {
     workers: Vec<Worker>,
     sender: mpsc::Sender<Message>,
     size: usize,
+}
+
+impl Debug for ThreadPool {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "workers={}", self.size)
+    }
 }
 
 impl ThreadPool {

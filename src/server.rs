@@ -1,9 +1,11 @@
 use crate::error::{CommandError, FrameError};
 use crate::threadpool;
 use crate::{connection, db};
+use std::fmt::{Debug, Formatter};
 use std::io;
 use std::net::TcpListener;
 use std::sync::Arc;
+use tracing::info;
 
 #[derive(Debug)]
 pub struct Server {
@@ -30,6 +32,8 @@ pub fn create_server(
     let thread_pool = threadpool::ThreadPool::new(worker_count)?;
     let tcp_listener = TcpListener::bind((server_ip, server_port))?;
 
+    info!("htcache server initialized");
+
     let htcache = Arc::new(db::HTCache::new(page_space, entry_space, eviction_policy));
     Ok(Server {
         thread_pool,
@@ -41,6 +45,8 @@ pub fn create_server(
 impl Server {
     /// listen listens to incoming connections and process them.
     pub fn listen(&self) {
+        info!("{:?}", self);
+        info!("htcache server ready for new connections");
         for stream in self.tcp_listener.incoming() {
             let stream = match stream {
                 Ok(stream) => stream,
