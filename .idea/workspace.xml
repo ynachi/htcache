@@ -14,7 +14,20 @@
   <component name="ChangeListManager">
     <list default="true" id="6014c35b-c356-42a3-9550-bac009aceb4d" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/threadpool.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/threadpool.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go-benchmark/benchmark_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/go-benchmark/benchmark_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cmd/del.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/del.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cmd/get.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/get.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cmd/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cmd/ping.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/ping.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cmd/set.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/set.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/connection.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/connection.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/db/htcache.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/db/htpage.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/db/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/db/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/server.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/server.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -82,8 +95,10 @@
     "Cargo.Test htcache::tests (1).executor": "Run",
     "Cargo.Test htcache::tests.executor": "Profiler",
     "DefaultGoTemplateProperty": "Go File",
+    "Go Build.go build go-benchmark.executor": "Run",
     "Go Test.BenchmarkRedisPing in go-benchmark.executor": "Run",
-    "Go Test.BenchmarkRedisSet in go-benchmark.executor": "Profiler#3",
+    "Go Test.BenchmarkRedisSet in go-benchmark.executor": "Run",
+    "Go Test.gobench go-benchmark.executor": "Debug",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.RadMigrateCodeStyle": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
@@ -95,7 +110,7 @@
     "WebServerToolWindowFactoryState": "false",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
-    "git-widget-placeholder": "dev/logging",
+    "git-widget-placeholder": "dev/shared-map",
     "go.import.settings.migrated": "true",
     "go.sdk.automatically.set": "true",
     "kotlin-language-version-configured": "true",
@@ -112,34 +127,17 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/src/db/storage" />
       <recent name="$PROJECT_DIR$/src/db/eviction" />
+      <recent name="$PROJECT_DIR$/src/db/storage" />
     </key>
   </component>
   <component name="RsExternalLinterProjectSettings">
     <option name="runOnTheFly" value="true" />
     <option name="tool" value="Clippy" />
   </component>
-  <component name="RunManager" selected="Cargo.Run htcache">
+  <component name="RunManager" selected="Go Test.gobench go-benchmark">
     <configuration name="Run htcache" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="command" value="run --package htcache --bin htcache" />
-      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <envs />
-      <option name="emulateTerminal" value="true" />
-      <option name="channel" value="DEFAULT" />
-      <option name="requiredFeatures" value="true" />
-      <option name="allFeatures" value="false" />
-      <option name="withSudo" value="false" />
-      <option name="buildTarget" value="REMOTE" />
-      <option name="backtrace" value="SHORT" />
-      <option name="isRedirectInput" value="false" />
-      <option name="redirectInputPath" value="" />
-      <method v="2">
-        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="Test db::htcache::tests::test_cache_concurrent" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package htcache --lib db::htcache::tests::test_cache_concurrent -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
       <option name="emulateTerminal" value="true" />
@@ -172,23 +170,6 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test frame::tests" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package htcache --lib frame::tests" />
-      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <envs />
-      <option name="emulateTerminal" value="true" />
-      <option name="channel" value="DEFAULT" />
-      <option name="requiredFeatures" value="true" />
-      <option name="allFeatures" value="false" />
-      <option name="withSudo" value="false" />
-      <option name="buildTarget" value="REMOTE" />
-      <option name="backtrace" value="SHORT" />
-      <option name="isRedirectInput" value="false" />
-      <option name="redirectInputPath" value="" />
-      <method v="2">
-        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
-      </method>
-    </configuration>
     <configuration name="Test htcache::tests" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="command" value="test --package htcache --lib db::htcache::tests" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -206,13 +187,34 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
+    <configuration name="BenchmarkRedisSet in go-benchmark" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="go-benchmark" />
+      <working_directory value="$PROJECT_DIR$/go-benchmark" />
+      <kind value="PACKAGE" />
+      <package value="go-benchmark" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gobench" />
+      <pattern value="^\QBenchmarkRedisSet\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="gobench go-benchmark" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="go-benchmark" />
+      <working_directory value="$PROJECT_DIR$/go-benchmark" />
+      <kind value="PACKAGE" />
+      <package value="go-benchmark" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gobench" />
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Test.gobench go-benchmark" />
+        <item itemvalue="Go Test.BenchmarkRedisSet in go-benchmark" />
         <item itemvalue="Cargo.Run htcache" />
         <item itemvalue="Cargo.Test db::htcache::tests::test_set_get_del" />
         <item itemvalue="Cargo.Test htcache::tests" />
-        <item itemvalue="Cargo.Test frame::tests" />
-        <item itemvalue="Cargo.Test db::htcache::tests::test_cache_concurrent" />
       </list>
     </recent_temporary>
   </component>
@@ -276,6 +278,19 @@
       <workItem from="1705442803084" duration="32477000" />
       <workItem from="1705755915682" duration="2886000" />
       <workItem from="1705763583898" duration="2282000" />
+      <workItem from="1705993914827" duration="1931000" />
+      <workItem from="1705995884848" duration="650000" />
+      <workItem from="1705996575764" duration="597000" />
+      <workItem from="1706037139325" duration="6658000" />
+      <workItem from="1706127532603" duration="7262000" />
+      <workItem from="1706213260684" duration="43000" />
+      <workItem from="1706213588373" duration="41000" />
+      <workItem from="1706213637004" duration="13000" />
+      <workItem from="1706213652765" duration="23000" />
+      <workItem from="1706213683501" duration="17000" />
+      <workItem from="1706213722295" duration="1915000" />
+      <workItem from="1706433102228" duration="598000" />
+      <workItem from="1706448571014" duration="28482000" />
     </task>
     <servers />
   </component>
@@ -297,15 +312,6 @@
     <settings-migrated>true</settings-migrated>
   </component>
   <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/src/cmd/mod.rs</url>
-          <line>50</line>
-          <option name="timeStamp" value="19" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
     <watches-manager>
       <configuration name="CargoCommandRunConfiguration">
         <watch expression="buff[buff.len() - 2]" language="Rust" />

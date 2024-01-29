@@ -21,15 +21,15 @@ pub struct Connection {
     conn: TcpStream,
     reader: BufReader<TcpStream>,
     writer: BufWriter<TcpStream>,
-    // a connection receive a reference of a Cache.
-    htcache: Arc<db::HTCache>,
+    // a connection receives a reference of a Cache.
+    state: Arc<db::State>,
 }
 
 impl Connection {
     pub fn close(&self) -> io::Result<()> {
         self.conn.shutdown(Shutdown::Both)
     }
-    pub fn new(stream: TcpStream, htcache: Arc<db::HTCache>) -> io::Result<Self> {
+    pub fn new(stream: TcpStream, state: Arc<db::State>) -> io::Result<Self> {
         // set write timeout on the stream as we won't be using async for now
         stream.set_write_timeout(WRITE_TIMEOUT)?;
         // stream_clone is a reference count for stream
@@ -39,7 +39,7 @@ impl Connection {
             conn: stream,
             reader: BufReader::new(read_clone),
             writer: BufWriter::new(write_clone),
-            htcache,
+            state,
         })
     }
 
@@ -48,7 +48,7 @@ impl Connection {
         frame::decode(&mut self.reader)
     }
 
-    /// write_frame writes a frame to the connection connection.
+    /// write_frame writes a frame to the connection.
     pub fn write_frame(&mut self, frame: &Frame) -> Result<(), io::Error> {
         let bytes = frame.encode();
         self.writer.write_all(bytes.as_slice())?;
@@ -91,7 +91,7 @@ impl Connection {
         match Cmd::from(frame) {
             Ok(command) => {
                 command
-                    .apply(&mut self.writer, &self.htcache)
+                    .apply(&mut self.writer, &self.state)
                     .unwrap_or_else(|err| {
                         // This error happen when things cannot be written to the connection
                         // So it is not useful to try to send it to the client over the connection.

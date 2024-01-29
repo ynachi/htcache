@@ -1,5 +1,5 @@
 use crate::cmd::Command;
-use crate::db::HTCache;
+use crate::db::{Cache, State};
 use crate::frame::Frame;
 use crate::{cmd, error};
 use std::io::Write;
@@ -10,8 +10,8 @@ pub struct Get {
 }
 
 impl Command for Get {
-    fn apply<T: Write>(&self, dest: &mut T, htcache: &Arc<HTCache>) -> std::io::Result<()> {
-        let response_frame = match htcache.get_value_for_key(&self.key) {
+    fn apply<T: Write>(&self, dest: &mut T, cache: &Arc<State>) -> std::io::Result<()> {
+        let response_frame = match cache.get_value_by_key(&self.key) {
             Some(value) => Frame::Bulk(value.to_string()),
             None => Frame::Null,
         };

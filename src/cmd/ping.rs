@@ -9,7 +9,7 @@ pub struct Ping {
 }
 
 impl Command for Ping {
-    fn apply<T: Write>(&self, dest: &mut T, _: &Arc<db::HTCache>) -> std::io::Result<()> {
+    fn apply<T: Write>(&self, dest: &mut T, _: &Arc<db::State>) -> std::io::Result<()> {
         let response = if self.message.is_none() {
             Frame::Simple("PONG".into())
         } else {

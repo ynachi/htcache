@@ -4,15 +4,17 @@ use crate::frame::Frame;
 use crate::{db, error};
 use std::io::Write;
 use std::sync::Arc;
+use std::time::Duration;
 
 pub struct Set {
     key: String,
     value: String,
+    // ttl: Option<Duration>,
 }
 
 impl Command for Set {
-    fn apply<T: Write>(&self, dest: &mut T, htcache: &Arc<db::HTCache>) -> std::io::Result<()> {
-        htcache.set_kv(&self.key, &self.value);
+    fn apply<T: Write>(&self, dest: &mut T, cache: &Arc<db::State>) -> std::io::Result<()> {
+        cache.set_kv(&self.key, &self.value, None);
         let response = Frame::Simple("OK".into());
         response.write_to(dest)
     }

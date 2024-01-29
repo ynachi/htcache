@@ -1,6 +1,6 @@
 use crate::cmd;
 use crate::cmd::Command;
-use crate::db::HTCache;
+use crate::db::{Cache, State};
 use crate::error::CommandError;
 use crate::frame::Frame;
 use std::io::Write;
@@ -11,8 +11,8 @@ pub struct Del {
 }
 
 impl Command for Del {
-    fn apply<T: Write>(&self, dest: &mut T, htcache: &Arc<HTCache>) -> std::io::Result<()> {
-        let deleted = htcache.delete_entries(&self.keys);
+    fn apply<T: Write>(&self, dest: &mut T, cache: &Arc<State>) -> std::io::Result<()> {
+        let deleted = cache.delete_entries(&self.keys);
         let response_frame = Frame::Integer(deleted as i64);
         response_frame.write_to(dest)
     }
