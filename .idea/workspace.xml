@@ -13,21 +13,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="6014c35b-c356-42a3-9550-bac009aceb4d" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go-benchmark/benchmark_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/go-benchmark/benchmark_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cmd/del.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/del.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cmd/get.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/get.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cmd/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cmd/ping.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/ping.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cmd/set.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/set.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/connection.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/connection.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/db/htcache.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/db/htpage.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/db/cache.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/db/cache.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/db/cmap.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/db/cmap.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/db/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/db/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/server.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/server.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -76,7 +68,9 @@
   "keyToString": {
     "Cargo.Run htcache.executor": "Debug",
     "Cargo.Run redisy.executor": "Debug",
+    "Cargo.Test cmap::tests.executor": "Run",
     "Cargo.Test connection::tests::test_read_frame.executor": "Run",
+    "Cargo.Test db::cmap::tests::test_cmap.executor": "Run",
     "Cargo.Test db::htcache::tests::test_cache_concurrent.executor": "Run",
     "Cargo.Test db::htcache::tests::test_multithreaded.executor": "Run",
     "Cargo.Test db::htcache::tests::test_set_get_del (1).executor": "Run",
@@ -135,7 +129,7 @@
     <option name="runOnTheFly" value="true" />
     <option name="tool" value="Clippy" />
   </component>
-  <component name="RunManager" selected="Go Test.gobench go-benchmark">
+  <component name="RunManager" selected="Cargo.Test db::cmap::tests::test_cmap">
     <configuration name="Run htcache" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="command" value="run --package htcache --bin htcache" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -153,8 +147,8 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test db::htcache::tests::test_set_get_del" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package htcache --lib db::htcache::tests::test_set_get_del -- --exact" />
+    <configuration name="Test cmap::tests" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package htcache --lib db::cmap::tests" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
       <option name="emulateTerminal" value="true" />
@@ -170,8 +164,8 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test htcache::tests" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package htcache --lib db::htcache::tests" />
+    <configuration name="Test db::cmap::tests::test_cmap" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package htcache --lib db::cmap::tests::test_cmap -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
       <option name="emulateTerminal" value="true" />
@@ -210,11 +204,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Cargo.Test db::cmap::tests::test_cmap" />
+        <item itemvalue="Cargo.Test cmap::tests" />
         <item itemvalue="Go Test.gobench go-benchmark" />
         <item itemvalue="Go Test.BenchmarkRedisSet in go-benchmark" />
         <item itemvalue="Cargo.Run htcache" />
-        <item itemvalue="Cargo.Test db::htcache::tests::test_set_get_del" />
-        <item itemvalue="Cargo.Test htcache::tests" />
       </list>
     </recent_temporary>
   </component>
@@ -290,7 +284,10 @@
       <workItem from="1706213683501" duration="17000" />
       <workItem from="1706213722295" duration="1915000" />
       <workItem from="1706433102228" duration="598000" />
-      <workItem from="1706448571014" duration="28482000" />
+      <workItem from="1706448571014" duration="45373000" />
+      <workItem from="1706733088928" duration="180000" />
+      <workItem from="1706733275872" duration="33314000" />
+      <workItem from="1706959890183" duration="2576000" />
     </task>
     <servers />
   </component>

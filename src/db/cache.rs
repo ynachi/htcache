@@ -5,7 +5,6 @@
 
 extern crate rand;
 use crate::db::cmap::CMap;
-use crate::db::CacheEntry;
 use metrics::{counter, describe_counter};
 use std::collections::BTreeSet;
 use std::fmt::{Debug, Formatter};
@@ -141,7 +140,7 @@ impl State {
         cleanup_needed: Arc<(Mutex<bool>, Condvar)>,
         auto_eviction_threshold: u8,
     ) -> io::Result<Self> {
-        let data = CMap::create(shard_count)?;
+        let data = CMap::new(shard_count, capacity / shard_count)?;
         let tracking = Mutex::new(BTreeSet::new());
         Ok(Self {
             data,
@@ -184,18 +183,18 @@ impl State {
             }
             prev_item = item.clone();
         }
-        return prev_item;
+        prev_item
     }
 
     pub fn set_kv(&self, key: &str, value: &str, ttl: Option<Duration>) {
         // Insert
-        let expiration_time = if let Some(ttl) = ttl {
-            Instant::now() + ttl
-        } else {
-            Instant::now()
-        };
-        let entry = CacheEntry::new(key, value, expiration_time);
-        self.data.set_kv(key, entry);
+        // let expiration_time = if let Some(ttl) = ttl {
+        //     Instant::now() + ttl
+        // } else {
+        //     Instant::now()
+        // };
+        // let entry = CacheEntry::new(key, value, expiration_time);
+        self.data.set_kv(key, value);
 
         let current_size = self.data.size();
 
@@ -212,11 +211,11 @@ impl State {
             );
         }
 
-        // Track key
-        self.tracking
-            .lock()
-            .unwrap()
-            .insert((expiration_time, key.to_string()));
+        // // Track key
+        // self.tracking
+        //     .lock()
+        //     .unwrap()
+        //     .insert((expiration_time, key.to_string()));
     }
 
     pub fn get_value_by_key(&self, key: &str) -> Option<String> {
