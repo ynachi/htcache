@@ -3,24 +3,26 @@ use crate::error::FrameError;
 use crate::error::{CommandError, HandleCommandError};
 use crate::frame::Frame;
 use crate::{db, frame};
+use bytes::BytesMut;
 use std::io;
-use std::io::{BufReader, BufWriter, Write};
-use std::net::{Shutdown, TcpStream};
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader, BufWriter};
+use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
+use tokio::net::TcpStream;
 use tracing::{debug, error};
 
-/// The client should give up after timeout attempt to write to the stream.
+/// The client should give up after a timeout attempt to write to the stream.
 //@TODO: Set as application config
 const WRITE_TIMEOUT: Option<Duration> = Some(Duration::new(0, 1000));
 
 /// Represents a connection to the server. It contains the TCPStream returned by the connection
 /// and a read buffer
 pub struct Connection {
-    // conn is the raw tcp stream created when a connection is established.
-    conn: TcpStream,
-    reader: BufReader<TcpStream>,
-    writer: BufWriter<TcpStream>,
+    reader: OwnedReadHalf,
+    writer: BufWriter<OwnedWriteHalf>,
+    //
+    buffer: BytesMut,
     // a connection receives a reference of a Cache.
     state: Arc<db::State>,
 }
@@ -31,21 +33,49 @@ impl Connection {
     }
     pub fn new(stream: TcpStream, state: Arc<db::State>) -> io::Result<Self> {
         // set write timeout on the stream as we won't be using async for now
-        stream.set_write_timeout(WRITE_TIMEOUT)?;
-        // stream_clone is a reference count for stream
-        let read_clone = stream.try_clone()?;
-        let write_clone = stream.try_clone()?;
+        // stream.set_write_timeout(WRITE_TIMEOUT)?;
+        // // stream_clone is a reference count for stream
+        // let read_clone = stream.clo()?;
+        // let write_clone = stream.try_clone()?;
+        let (read_half, write_half) = stream.into_split();
+        // let mut reader = BufReader::new(read_half);
+        let mut writer = BufWriter::new(write_half);
         Ok(Self {
-            conn: stream,
-            reader: BufReader::new(read_clone),
-            writer: BufWriter::new(write_clone),
+            reader: read_half,
+            writer,
+            buffer: BytesMut::with_capacity(4 * 1024),
             state,
         })
     }
 
     /// read_frame reads a frame from this connection.
-    pub fn read_frame(&mut self) -> Result<Frame, FrameError> {
-        frame::decode(&mut self.reader)
+    pub async fn read_frame(&mut self) -> Result<Frame, FrameError> {
+        loop {
+            let len = self.reader.read_buf(&mut self.buffer).await?;
+
+            if len == 0 {
+                return if self.buffer.is_empty() {
+                    // Connection gracefully closed
+                    Err(FrameError::EOF)
+                } else {
+                    // unintended connection reset
+                    Err(FrameError::ConnectionReset)
+                };
+            }
+
+            // attempt to parse frame
+            // be sure to maintain the position of the cursor in the buffer
+            // We cannot call a frame parsing function directly here because we need to keep
+            // track of the state of the buffer
+            self.parse_frame().expect("TODO: panic message");
+        }
+    }
+
+    fn parse_frame(&mut self) -> Result<Frame, FrameError> {
+        let mut buf = io::Cursor::new(&self.buffer[..]);
+
+        // now call frame decode on buf, try to decode from the data available
+        frame::decode(&mut buf)
     }
 
     /// write_frame writes a frame to the connection.
@@ -73,9 +103,9 @@ impl Connection {
     }
 
     /// handle_command try to retrieve a command from a connection and process it.
-    /// All command related errors are sent as response to the client and the rest
-    /// are return to the caller for further processing.
-    pub fn handle_command(&mut self) -> Result<(), HandleCommandError> {
+    /// All command related errors are sent as response to the client, and the rest
+    /// are returned to the caller for further processing.
+    pub async fn handle_command(&mut self) -> Result<(), HandleCommandError> {
         // get frame fist
         let frame = self.read_frame()?;
         debug!("received command frame: {:?}", frame);
@@ -93,7 +123,7 @@ impl Connection {
                 command
                     .apply(&mut self.writer, &self.state)
                     .unwrap_or_else(|err| {
-                        // This error happen when things cannot be written to the connection
+                        // This error happens when things cannot be written to the connection,
                         // So it is not useful to try to send it to the client over the connection.
                         error!(
                             error_message = err.to_string(),

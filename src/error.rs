@@ -1,4 +1,6 @@
 use std::fmt::{Debug, Display, Formatter, Result};
+use std::io::ErrorKind;
+use std::net::Shutdown::Write;
 use std::num::ParseIntError;
 use std::string::FromUtf8Error;
 use std::{fmt, io};
@@ -9,9 +11,12 @@ pub enum FrameError {
     Encoding(io::Error),
     InvalidFrame,
     InvalidType,
+    Incomplete,
     StringFromUTF8(FromUtf8Error),
     IntFromUTF8(ParseIntError),
     UnexpectedEOF,
+    ConnectionReset,
+    ConnectionRead(io::Error),
 }
 
 impl Display for FrameError {
@@ -24,6 +29,11 @@ impl Display for FrameError {
             FrameError::UnexpectedEOF => write!(f, "connection abruptly closed"),
             FrameError::StringFromUTF8(err) => write!(f, "cannot convert bytes to string: {}", err),
             FrameError::IntFromUTF8(err) => write!(f, "cannot convert bytes to int: {}", err),
+            FrameError::ConnectionReset => write!(f, "connection reset by peer"),
+            FrameError::ConnectionRead(err) => {
+                write!(f, "generic error while reading on connection: {}", err)
+            }
+            FrameError::Incomplete => write!(f, "frame is incomplete"),
         }
     }
 }
@@ -34,6 +44,9 @@ impl std::error::Error for FrameError {}
 // Convert io::Error to FrameError::Encoding
 impl From<io::Error> for FrameError {
     fn from(err: io::Error) -> Self {
+        if err.kind() == ErrorKind::UnexpectedEof {
+            return FrameError::EOF;
+        }
         FrameError::Encoding(err)
     }
 }
