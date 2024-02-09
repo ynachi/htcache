@@ -5,6 +5,7 @@ use crate::{db, error};
 use std::io::Write;
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::io::AsyncWrite;
 
 pub struct Set {
     key: String,
@@ -13,10 +14,14 @@ pub struct Set {
 }
 
 impl Command for Set {
-    fn apply<T: Write>(&self, dest: &mut T, cache: &Arc<db::State>) -> std::io::Result<()> {
+    async fn apply<T: AsyncWrite + Unpin>(
+        &self,
+        dest: &mut T,
+        cache: &Arc<db::State>,
+    ) -> std::io::Result<()> {
         cache.set_kv(&self.key, &self.value, None);
         let response = Frame::Simple("OK".into());
-        response.write_to(dest)
+        response.write_to(dest).await
     }
 
     fn from(frame: &Frame) -> Result<Self, error::CommandError> {

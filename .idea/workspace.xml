@@ -14,11 +14,15 @@
   <component name="ChangeListManager">
     <list default="true" id="6014c35b-c356-42a3-9550-bac009aceb4d" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cmd/del.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/del.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cmd/get.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/get.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cmd/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cmd/ping.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/ping.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cmd/set.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/set.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/connection.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/connection.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/error.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/frame.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/server.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/server.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -48,6 +52,9 @@
     <setting file="file://$USER_HOME$/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/std/src/io/buffered/bufreader.rs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/src/frame.rs" root0="SKIP_INSPECTION" />
   </component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="ukd56umr" />
   </component>
@@ -67,9 +74,11 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
-    &quot;Cargo.Run htcache.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Build `Run htcache`.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Run htcache.executor&quot;: &quot;Debug&quot;,
     &quot;Cargo.Run redisy.executor&quot;: &quot;Debug&quot;,
     &quot;Cargo.Test cmap::tests.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test connection::test_read_frame_with_real_network.executor&quot;: &quot;Run&quot;,
     &quot;Cargo.Test connection::tests::test_read_frame.executor&quot;: &quot;Run&quot;,
     &quot;Cargo.Test db::cmap::tests::test_cmap.executor&quot;: &quot;Run&quot;,
     &quot;Cargo.Test db::htcache::tests::test_cache_concurrent.executor&quot;: &quot;Run&quot;,
@@ -165,6 +174,23 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
+    <configuration name="Test connection::test_read_frame_with_real_network" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package htcache --lib connection::test_read_frame_with_real_network -- --exact" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="Test db::cmap::tests::test_cmap" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="command" value="test --package htcache --lib db::cmap::tests::test_cmap -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -182,17 +208,6 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="BenchmarkRedisSet in go-benchmark" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="go-benchmark" />
-      <working_directory value="$PROJECT_DIR$/go-benchmark" />
-      <kind value="PACKAGE" />
-      <package value="go-benchmark" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$" />
-      <framework value="gobench" />
-      <pattern value="^\QBenchmarkRedisSet\E$" />
-      <method v="2" />
-    </configuration>
     <configuration name="gobench go-benchmark" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="go-benchmark" />
       <working_directory value="$PROJECT_DIR$/go-benchmark" />
@@ -206,6 +221,7 @@
     <recent_temporary>
       <list>
         <item itemvalue="Cargo.Run htcache" />
+        <item itemvalue="Cargo.Test connection::test_read_frame_with_real_network" />
         <item itemvalue="Cargo.Test db::cmap::tests::test_cmap" />
         <item itemvalue="Cargo.Test cmap::tests" />
       </list>
@@ -287,7 +303,9 @@
       <workItem from="1706733088928" duration="180000" />
       <workItem from="1706733275872" duration="33314000" />
       <workItem from="1706959890183" duration="39966000" />
-      <workItem from="1707118827906" duration="14364000" />
+      <workItem from="1707118827906" duration="23797000" />
+      <workItem from="1707254679099" duration="31797000" />
+      <workItem from="1707512215169" duration="3018000" />
     </task>
     <servers />
   </component>
@@ -309,12 +327,60 @@
     <settings-migrated>true</settings-migrated>
   </component>
   <component name="XDebuggerManager">
-    <watches-manager>
-      <configuration name="CargoCommandRunConfiguration">
-        <watch expression="buff[buff.len() - 2]" language="Rust" />
-        <watch expression="content.len() &lt; min_args_len" language="Rust" />
-      </configuration>
-    </watches-manager>
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/connection.rs</url>
+          <line>85</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/frame.rs</url>
+          <line>160</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/frame.rs</url>
+          <line>348</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/frame.rs</url>
+          <line>212</line>
+          <option name="timeStamp" value="4" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/connection.rs</url>
+          <line>172</line>
+          <option name="timeStamp" value="6" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/frame.rs</url>
+          <line>351</line>
+          <option name="timeStamp" value="7" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/frame.rs</url>
+          <line>303</line>
+          <option name="timeStamp" value="8" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/frame.rs</url>
+          <line>313</line>
+          <option name="timeStamp" value="9" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/cmd/ping.rs</url>
+          <line>26</line>
+          <option name="timeStamp" value="12" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/frame.rs</url>
+          <line>268</line>
+          <option name="timeStamp" value="13" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

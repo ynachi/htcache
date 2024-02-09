@@ -2,6 +2,7 @@ use std::fmt::{Debug, Display, Formatter, Result};
 use std::io::ErrorKind;
 use std::net::Shutdown::Write;
 use std::num::ParseIntError;
+use std::str::Utf8Error;
 use std::string::FromUtf8Error;
 use std::{fmt, io};
 
@@ -13,6 +14,7 @@ pub enum FrameError {
     InvalidType,
     Incomplete,
     StringFromUTF8(FromUtf8Error),
+    StrFromUTF8(std::str::Utf8Error),
     IntFromUTF8(ParseIntError),
     UnexpectedEOF,
     ConnectionReset,
@@ -34,6 +36,7 @@ impl Display for FrameError {
                 write!(f, "generic error while reading on connection: {}", err)
             }
             FrameError::Incomplete => write!(f, "frame is incomplete"),
+            FrameError::StrFromUTF8(err) => write!(f, "cannot convert bytes to &str: {}", err),
         }
     }
 }
@@ -54,6 +57,12 @@ impl From<io::Error> for FrameError {
 impl From<FromUtf8Error> for FrameError {
     fn from(value: FromUtf8Error) -> Self {
         FrameError::StringFromUTF8(value)
+    }
+}
+
+impl From<Utf8Error> for FrameError {
+    fn from(value: Utf8Error) -> Self {
+        FrameError::StrFromUTF8(value)
     }
 }
 

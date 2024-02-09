@@ -1,21 +1,25 @@
 use crate::cmd::Command;
-use crate::db::{Cache, State};
+use crate::db::State;
 use crate::frame::Frame;
 use crate::{cmd, error};
-use std::io::Write;
 use std::sync::Arc;
+use tokio::io::AsyncWrite;
 
 pub struct Get {
     key: String,
 }
 
 impl Command for Get {
-    fn apply<T: Write>(&self, dest: &mut T, cache: &Arc<State>) -> std::io::Result<()> {
+    async fn apply<T: AsyncWrite + Unpin>(
+        &self,
+        dest: &mut T,
+        cache: &Arc<State>,
+    ) -> std::io::Result<()> {
         let response_frame = match cache.get_value_by_key(&self.key) {
             Some(value) => Frame::Bulk(value.to_string()),
             None => Frame::Null,
         };
-        response_frame.write_to(dest)
+        response_frame.write_to(dest).await
     }
 
     fn from(frame: &Frame) -> Result<Self, error::CommandError> {

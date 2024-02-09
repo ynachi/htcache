@@ -11,7 +11,7 @@ use tracing::{debug, error, info};
 
 #[derive(Debug)]
 pub struct Server {
-    thread_pool: threadpool::ThreadPool,
+    // thread_pool: threadpool::ThreadPool,
     tcp_listener: TcpListener,
     cache: db::Cache,
     // @ TODO: uncomment and implement
@@ -23,15 +23,15 @@ pub struct Server {
 /// It is required in this case because creating a new server requires
 ///  preparing threads that it will use to process the requests.
 /// And, creating threads is likely to fail for reasons related to the OS.
-async fn create_server(
+pub async fn create_server(
     server_ip: String,
     server_port: u16,
-    worker_count: usize,
+    // worker_count: usize,
     cache_capacity: usize,
     shard_count: usize,
     eviction_threshold: u8,
 ) -> io::Result<Server> {
-    let thread_pool = threadpool::ThreadPool::new(worker_count)?;
+    // let thread_pool = threadpool::ThreadPool::new(worker_count)?;
     let tcp_listener = TcpListener::bind((server_ip, server_port)).await?;
 
     info!("htcache server initialized");
@@ -39,7 +39,7 @@ async fn create_server(
     let cache = db::create_cache(cache_capacity, shard_count, eviction_threshold)?;
 
     Ok(Server {
-        thread_pool,
+        // thread_pool,
         tcp_listener,
         cache,
     })
@@ -50,7 +50,7 @@ impl Server {
     /// a separate thread.
     /// We started with our own implementation of a thread pool.
     /// We then, moved to tokio green threads.
-    async fn listen(&self) {
+    pub async fn listen(&self) {
         // show server's info to the user
         info!("{:?}", self);
         info!("htcache server ready for new connections");
@@ -94,7 +94,7 @@ async fn process_commands(conn: &mut Connection) {
             Ok(_) => {}
             Err(HandleCommandError::Frame(FrameError::EOF)) => {
                 debug!(
-                    remote_address = conn.get_client_ip(),
+                    remote_address = "conn.get_client_ip()",
                     "client gracefully closed connection"
                 );
                 break;
