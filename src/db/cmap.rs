@@ -35,10 +35,6 @@ impl Bucket {
         }
         0
     }
-
-    fn contains_key(&self, key: &str) -> bool {
-        self.storage.contains_key(key)
-    }
 }
 
 pub struct CMap {
@@ -160,10 +156,6 @@ impl CMap {
         self.size.fetch_sub(count, Ordering::SeqCst);
 
         count
-    }
-
-    fn contains_key(&self, key: &str) -> bool {
-        self.get_shard_by_key(key).lock().unwrap().contains_key(key)
     }
 
     pub fn size(&self) -> usize {

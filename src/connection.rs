@@ -126,46 +126,11 @@ impl Connection {
         // get frame fist
         let frame = self.read_frame().await?;
         debug!("received command frame: {:?}", frame);
-        let cmd_name = cmd::get_name(&frame)?;
-        self.apply_command(&cmd_name, &frame).await;
+        // now parse command from frame
+        let command = Command::from_frame(frame)?;
+        // run command
+        command.apply(&mut self.writer, &self.state).await?;
         Ok(())
-    }
-
-    async fn execute_command<Cmd>(&mut self, frame: &Frame)
-    where
-        Cmd: Command,
-    {
-        match Cmd::from(frame) {
-            Ok(command) => {
-                command
-                    .apply(&mut self.writer, &self.state)
-                    .await
-                    .unwrap_or_else(|err| {
-                        // This error happens when things cannot be written to the connection,
-                        // So it is not useful to try to send it to the client over the connection.
-                        error!(
-                            error_message = err.to_string(),
-                            "error writing response to client"
-                        );
-                    });
-            }
-            Err(err) => self.send_error(&HandleCommandError::Command(err)).await,
-        }
-    }
-
-    async fn apply_command(&mut self, cmd_name: &str, frame: &Frame) {
-        match cmd_name {
-            "PING" => self.execute_command::<cmd::Ping>(frame).await,
-            "SET" => self.execute_command::<cmd::Set>(frame).await,
-            "GET" => self.execute_command::<cmd::Get>(frame).await,
-            "DEL" => self.execute_command::<cmd::Del>(frame).await,
-            _ => {
-                self.send_error(&HandleCommandError::Command(CommandError::Unknown(
-                    cmd_name.to_string(),
-                )))
-                .await
-            }
-        }
     }
 }
 

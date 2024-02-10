@@ -1,5 +1,4 @@
 use htcache::server;
-use metrics::describe_counter;
 
 #[tokio::main]
 pub async fn main() -> std::io::Result<()> {

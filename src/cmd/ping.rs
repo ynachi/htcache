@@ -1,20 +1,13 @@
-use crate::cmd::Command;
+use crate::error;
 use crate::frame::Frame;
-use crate::{cmd, db, error};
-use std::io::Write;
-use std::sync::Arc;
 use tokio::io::AsyncWrite;
 
 pub struct Ping {
     message: Option<String>,
 }
 
-impl Command for Ping {
-    async fn apply<T: AsyncWrite + Unpin>(
-        &self,
-        dest: &mut T,
-        _: &Arc<db::State>,
-    ) -> std::io::Result<()> {
+impl Ping {
+    pub(crate) async fn apply<T: AsyncWrite + Unpin>(&self, dest: &mut T) -> std::io::Result<()> {
         let response = if self.message.is_none() {
             Frame::Simple("PONG".into())
         } else {
@@ -23,13 +16,18 @@ impl Command for Ping {
         response.write_to(dest).await
     }
 
-    fn from(frame: &Frame) -> Result<Self, error::CommandError> {
-        let content = cmd::check_cmd_frame(frame, 1, Some(2), "PING")?;
+    pub(crate) fn from_vec(frames: &[Frame]) -> Result<Self, error::CommandError> {
+        let len = frames.len();
+        if len > 1 {
+            return Err(error::CommandError::Malformed(
+                "PING command takes zero or one argument".into(),
+            ));
+        }
         let mut cmd = new();
-        if content.len() == 1 {
+        if frames.len() == 0 {
             return Ok(cmd);
         }
-        if let Frame::Bulk(value) = &content[1] {
+        if let Frame::Bulk(value) = &frames[0] {
             cmd.message = Some(value.into());
         }
         Ok(cmd)

@@ -288,6 +288,12 @@ fn get_bulk_string(buf: &mut Cursor<&[u8]>) -> Result<String, FrameError> {
         }
     }
     // get bulk frame content
+    println!(
+        "----------- content_start_index={} - bulk_size={} - content_end_index={}",
+        content_start_index,
+        bulk_size,
+        content_start_index + bulk_size - 1
+    );
     let content_end_index = content_start_index + bulk_size - 1;
     if content_end_index + 2 <= end
         && buf.get_ref()[content_end_index + 1] == CR

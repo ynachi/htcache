@@ -1,5 +1,3 @@
-use crate::cmd;
-use crate::cmd::Command;
 use crate::db::State;
 use crate::error::CommandError;
 use crate::frame::Frame;
@@ -10,21 +8,25 @@ pub struct Del {
     keys: Vec<String>,
 }
 
-impl Command for Del {
-    async fn apply<T: AsyncWrite + Unpin>(
+impl Del {
+    pub(crate) async fn apply<T: AsyncWrite + Unpin>(
         &self,
         dest: &mut T,
-        cache: &Arc<State>,
+        state: &Arc<State>,
     ) -> std::io::Result<()> {
-        let deleted = cache.delete_entries(&self.keys);
+        let deleted = state.delete_entries(&self.keys);
         let response_frame = Frame::Integer(deleted as i64);
         response_frame.write_to(dest).await
     }
 
-    fn from(frame: &Frame) -> Result<Self, CommandError> {
-        let content = cmd::check_cmd_frame(frame, 2, None, "DEL")?;
+    pub(crate) fn from_vec(frames: &[Frame]) -> Result<Self, CommandError> {
+        if frames.len() < 1 {
+            return Err(CommandError::Malformed(
+                "DEL command requires at least one key".to_string(),
+            ));
+        }
         let mut cmd = new();
-        for f in content.iter().skip(1) {
+        for f in frames.iter() {
             if let Frame::Bulk(value) = f {
                 cmd.keys.push(value.clone())
             }

@@ -20,10 +20,10 @@
       <change beforePath="$PROJECT_DIR$/src/cmd/ping.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/ping.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/cmd/set.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/set.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/connection.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/connection.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/db/cmap.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/db/cmap.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/error.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/frame.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/server.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/server.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -139,7 +139,7 @@
     <option name="runOnTheFly" value="true" />
     <option name="tool" value="Clippy" />
   </component>
-  <component name="RunManager" selected="Cargo.Run htcache">
+  <component name="RunManager" selected="Cargo.Test connection::test_read_frame_with_real_network">
     <configuration name="Run htcache" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="command" value="run --package htcache --bin htcache" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -208,7 +208,7 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="gobench go-benchmark" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="BenchmarkRedisSet in go-benchmark" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="go-benchmark" />
       <working_directory value="$PROJECT_DIR$/go-benchmark" />
       <kind value="PACKAGE" />
@@ -216,14 +216,16 @@
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gobench" />
+      <pattern value="^\QBenchmarkRedisSet\E$" />
       <method v="2" />
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Cargo.Run htcache" />
         <item itemvalue="Cargo.Test connection::test_read_frame_with_real_network" />
+        <item itemvalue="Go Test.BenchmarkRedisSet in go-benchmark" />
         <item itemvalue="Cargo.Test db::cmap::tests::test_cmap" />
         <item itemvalue="Cargo.Test cmap::tests" />
+        <item itemvalue="Cargo.Run htcache" />
       </list>
     </recent_temporary>
   </component>
@@ -306,6 +308,12 @@
       <workItem from="1707118827906" duration="23797000" />
       <workItem from="1707254679099" duration="31797000" />
       <workItem from="1707512215169" duration="3018000" />
+      <workItem from="1707521359811" duration="1409000" />
+      <workItem from="1707556839402" duration="73000" />
+      <workItem from="1707556920552" duration="40000" />
+      <workItem from="1707556965152" duration="12000" />
+      <workItem from="1707557008901" duration="8032000" />
+      <workItem from="1707568345429" duration="8598000" />
     </task>
     <servers />
   </component>
@@ -341,7 +349,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/frame.rs</url>
-          <line>348</line>
+          <line>354</line>
           <option name="timeStamp" value="3" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
@@ -351,28 +359,23 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/connection.rs</url>
-          <line>172</line>
+          <line>137</line>
           <option name="timeStamp" value="6" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/frame.rs</url>
-          <line>351</line>
+          <line>357</line>
           <option name="timeStamp" value="7" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/frame.rs</url>
-          <line>303</line>
+          <line>309</line>
           <option name="timeStamp" value="8" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/frame.rs</url>
-          <line>313</line>
+          <line>319</line>
           <option name="timeStamp" value="9" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/src/cmd/ping.rs</url>
-          <line>26</line>
-          <option name="timeStamp" value="12" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/frame.rs</url>

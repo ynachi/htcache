@@ -1,6 +1,5 @@
 use std::fmt::{Debug, Display, Formatter, Result};
 use std::io::ErrorKind;
-use std::net::Shutdown::Write;
 use std::num::ParseIntError;
 use std::str::Utf8Error;
 use std::string::FromUtf8Error;
@@ -78,7 +77,7 @@ pub enum CommandError {
     Unknown(String),
     Malformed(String), // string is command name
     InvalidCmdFrame,
-    Connection,
+    Connection(io::Error),
     FrameDecode(FrameError), // this variant is a wrapper of FrameError
 }
 
@@ -97,8 +96,8 @@ impl Display for CommandError {
             CommandError::InvalidCmdFrame => {
                 write!(f, "frame is an array but cannot be a valid command")
             }
-            CommandError::Connection => {
-                write!(f, "network error: error while writing to network")
+            CommandError::Connection(e) => {
+                write!(f, "network error: error while writing to network: {}", e)
             }
             CommandError::FrameDecode(e) => {
                 write!(f, "{}", e)
@@ -114,6 +113,11 @@ pub enum HandleCommandError {
     Command(CommandError),
 }
 
+impl From<io::Error> for HandleCommandError {
+    fn from(error: io::Error) -> Self {
+        HandleCommandError::Frame(FrameError::from(error))
+    }
+}
 impl From<FrameError> for HandleCommandError {
     fn from(error: FrameError) -> Self {
         HandleCommandError::Frame(error)
