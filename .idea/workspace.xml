@@ -14,7 +14,16 @@
   <component name="ChangeListManager">
     <list default="true" id="6014c35b-c356-42a3-9550-bac009aceb4d" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/threadpool.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/threadpool.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cmd/del.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/del.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cmd/get.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/get.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cmd/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cmd/ping.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/ping.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cmd/set.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/set.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/connection.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/connection.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/db/cmap.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/db/cmap.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/error.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/frame.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -41,7 +50,11 @@
   </component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$USER_HOME$/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/std/src/io/buffered/bufreader.rs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/src/frame.rs" root0="SKIP_INSPECTION" />
   </component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="ukd56umr" />
   </component>
@@ -59,68 +72,74 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Cargo.Run htcache.executor": "Debug",
-    "Cargo.Run redisy.executor": "Debug",
-    "Cargo.Test connection::tests::test_read_frame.executor": "Run",
-    "Cargo.Test db::htcache::tests::test_cache_concurrent.executor": "Run",
-    "Cargo.Test db::htcache::tests::test_multithreaded.executor": "Run",
-    "Cargo.Test db::htcache::tests::test_set_get_del (1).executor": "Run",
-    "Cargo.Test db::htcache::tests::test_set_get_del.executor": "Profiler",
-    "Cargo.Test frame::tests.executor": "Profiler",
-    "Cargo.Test frame::tests::test_decode.executor": "Run",
-    "Cargo.Test frame::tests::test_decode_array.executor": "Run",
-    "Cargo.Test frame::tests::test_decode_bool.executor": "Run",
-    "Cargo.Test frame::tests::test_decode_bulk.executor": "Run",
-    "Cargo.Test frame::tests::test_decode_error.executor": "Run",
-    "Cargo.Test frame::tests::test_decode_integer.executor": "Run",
-    "Cargo.Test frame::tests::test_decode_simple_string.executor": "Run",
-    "Cargo.Test frame::tests::test_frame_fmt.executor": "Run",
-    "Cargo.Test frame::tests::test_read_until_crlf_bulk.executor": "Run",
-    "Cargo.Test frame::tests::test_read_until_crlf_simple.executor": "Run",
-    "Cargo.Test htcache::tests (1).executor": "Run",
-    "Cargo.Test htcache::tests.executor": "Profiler",
-    "DefaultGoTemplateProperty": "Go File",
-    "Go Test.BenchmarkRedisPing in go-benchmark.executor": "Run",
-    "Go Test.BenchmarkRedisSet in go-benchmark.executor": "Profiler#3",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.RadMigrateCodeStyle": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.cidr.known.project.marker": "true",
-    "RunOnceActivity.go.formatter.settings.were.checked": "true",
-    "RunOnceActivity.go.migrated.go.modules.settings": "true",
-    "RunOnceActivity.go.modules.automatic.dependencies.download": "true",
-    "RunOnceActivity.readMode.enableVisualFormatting": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "cf.first.check.clang-format": "false",
-    "cidr.known.project.marker": "true",
-    "git-widget-placeholder": "dev/logging",
-    "go.import.settings.migrated": "true",
-    "go.sdk.automatically.set": "true",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "/Users/ynachi/codes/github.com/htcache",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Cargo.Build `Run htcache`.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Run htcache.executor&quot;: &quot;Debug&quot;,
+    &quot;Cargo.Run redisy.executor&quot;: &quot;Debug&quot;,
+    &quot;Cargo.Test cmap::tests.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test connection::test_read_frame_with_real_network.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test connection::tests::test_read_frame.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test db::cmap::tests::test_cmap.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test db::htcache::tests::test_cache_concurrent.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test db::htcache::tests::test_multithreaded.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test db::htcache::tests::test_set_get_del (1).executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test db::htcache::tests::test_set_get_del.executor&quot;: &quot;Profiler&quot;,
+    &quot;Cargo.Test frame::tests.executor&quot;: &quot;Profiler&quot;,
+    &quot;Cargo.Test frame::tests::test_decode.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test frame::tests::test_decode_array.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test frame::tests::test_decode_bool.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test frame::tests::test_decode_bulk.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test frame::tests::test_decode_error.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test frame::tests::test_decode_integer.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test frame::tests::test_decode_simple_string.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test frame::tests::test_frame_fmt.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test frame::tests::test_read_until_crlf_bulk.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test frame::tests::test_read_until_crlf_simple.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test htcache::tests (1).executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test htcache::tests.executor&quot;: &quot;Profiler&quot;,
+    &quot;DefaultGoTemplateProperty&quot;: &quot;Go File&quot;,
+    &quot;Go Build.go build go-benchmark.executor&quot;: &quot;Run&quot;,
+    &quot;Go Test.BenchmarkRedisPing in go-benchmark.executor&quot;: &quot;Run&quot;,
+    &quot;Go Test.BenchmarkRedisSet in go-benchmark.executor&quot;: &quot;Run&quot;,
+    &quot;Go Test.gobench go-benchmark.executor&quot;: &quot;Debug&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.RadMigrateCodeStyle&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.modules.automatic.dependencies.download&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;dev/shared-map&quot;,
+    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
+    &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/ynachi/codes/github.com/htcache&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/src/db/storage" />
       <recent name="$PROJECT_DIR$/src/db/eviction" />
+      <recent name="$PROJECT_DIR$/src/db/storage" />
     </key>
   </component>
   <component name="RsExternalLinterProjectSettings">
     <option name="runOnTheFly" value="true" />
     <option name="tool" value="Clippy" />
   </component>
-  <component name="RunManager" selected="Cargo.Run htcache">
+  <component name="RunManager" selected="Cargo.Test connection::test_read_frame_with_real_network">
     <configuration name="Run htcache" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="command" value="run --package htcache --bin htcache" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -138,8 +157,8 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test db::htcache::tests::test_cache_concurrent" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package htcache --lib db::htcache::tests::test_cache_concurrent -- --exact" />
+    <configuration name="Test cmap::tests" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package htcache --lib db::cmap::tests" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
       <option name="emulateTerminal" value="true" />
@@ -155,8 +174,8 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test db::htcache::tests::test_set_get_del" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package htcache --lib db::htcache::tests::test_set_get_del -- --exact" />
+    <configuration name="Test connection::test_read_frame_with_real_network" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package htcache --lib connection::test_read_frame_with_real_network -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
       <option name="emulateTerminal" value="true" />
@@ -172,8 +191,8 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test frame::tests" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package htcache --lib frame::tests" />
+    <configuration name="Test db::cmap::tests::test_cmap" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package htcache --lib db::cmap::tests::test_cmap -- --exact" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
       <option name="emulateTerminal" value="true" />
@@ -189,30 +208,24 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Test htcache::tests" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="command" value="test --package htcache --lib db::htcache::tests" />
-      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <envs />
-      <option name="emulateTerminal" value="true" />
-      <option name="channel" value="DEFAULT" />
-      <option name="requiredFeatures" value="true" />
-      <option name="allFeatures" value="false" />
-      <option name="withSudo" value="false" />
-      <option name="buildTarget" value="REMOTE" />
-      <option name="backtrace" value="SHORT" />
-      <option name="isRedirectInput" value="false" />
-      <option name="redirectInputPath" value="" />
-      <method v="2">
-        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
-      </method>
+    <configuration name="BenchmarkRedisSet in go-benchmark" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="go-benchmark" />
+      <working_directory value="$PROJECT_DIR$/go-benchmark" />
+      <kind value="PACKAGE" />
+      <package value="go-benchmark" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gobench" />
+      <pattern value="^\QBenchmarkRedisSet\E$" />
+      <method v="2" />
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Cargo.Test connection::test_read_frame_with_real_network" />
+        <item itemvalue="Go Test.BenchmarkRedisSet in go-benchmark" />
+        <item itemvalue="Cargo.Test db::cmap::tests::test_cmap" />
+        <item itemvalue="Cargo.Test cmap::tests" />
         <item itemvalue="Cargo.Run htcache" />
-        <item itemvalue="Cargo.Test db::htcache::tests::test_set_get_del" />
-        <item itemvalue="Cargo.Test htcache::tests" />
-        <item itemvalue="Cargo.Test frame::tests" />
-        <item itemvalue="Cargo.Test db::htcache::tests::test_cache_concurrent" />
       </list>
     </recent_temporary>
   </component>
@@ -276,6 +289,31 @@
       <workItem from="1705442803084" duration="32477000" />
       <workItem from="1705755915682" duration="2886000" />
       <workItem from="1705763583898" duration="2282000" />
+      <workItem from="1705993914827" duration="1931000" />
+      <workItem from="1705995884848" duration="650000" />
+      <workItem from="1705996575764" duration="597000" />
+      <workItem from="1706037139325" duration="6658000" />
+      <workItem from="1706127532603" duration="7262000" />
+      <workItem from="1706213260684" duration="43000" />
+      <workItem from="1706213588373" duration="41000" />
+      <workItem from="1706213637004" duration="13000" />
+      <workItem from="1706213652765" duration="23000" />
+      <workItem from="1706213683501" duration="17000" />
+      <workItem from="1706213722295" duration="1915000" />
+      <workItem from="1706433102228" duration="598000" />
+      <workItem from="1706448571014" duration="45373000" />
+      <workItem from="1706733088928" duration="180000" />
+      <workItem from="1706733275872" duration="33314000" />
+      <workItem from="1706959890183" duration="39966000" />
+      <workItem from="1707118827906" duration="23797000" />
+      <workItem from="1707254679099" duration="31797000" />
+      <workItem from="1707512215169" duration="3018000" />
+      <workItem from="1707521359811" duration="1409000" />
+      <workItem from="1707556839402" duration="73000" />
+      <workItem from="1707556920552" duration="40000" />
+      <workItem from="1707556965152" duration="12000" />
+      <workItem from="1707557008901" duration="8032000" />
+      <workItem from="1707568345429" duration="8598000" />
     </task>
     <servers />
   </component>
@@ -300,18 +338,52 @@
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/src/cmd/mod.rs</url>
-          <line>50</line>
-          <option name="timeStamp" value="19" />
+          <url>file://$PROJECT_DIR$/src/connection.rs</url>
+          <line>85</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/frame.rs</url>
+          <line>160</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/frame.rs</url>
+          <line>354</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/frame.rs</url>
+          <line>212</line>
+          <option name="timeStamp" value="4" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/connection.rs</url>
+          <line>137</line>
+          <option name="timeStamp" value="6" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/frame.rs</url>
+          <line>357</line>
+          <option name="timeStamp" value="7" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/frame.rs</url>
+          <line>309</line>
+          <option name="timeStamp" value="8" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/frame.rs</url>
+          <line>319</line>
+          <option name="timeStamp" value="9" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/frame.rs</url>
+          <line>268</line>
+          <option name="timeStamp" value="13" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
-    <watches-manager>
-      <configuration name="CargoCommandRunConfiguration">
-        <watch expression="buff[buff.len() - 2]" language="Rust" />
-        <watch expression="content.len() &lt; min_args_len" language="Rust" />
-      </configuration>
-    </watches-manager>
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

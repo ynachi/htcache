@@ -1,5 +1,7 @@
 use std::fmt::{Debug, Display, Formatter, Result};
+use std::io::ErrorKind;
 use std::num::ParseIntError;
+use std::str::Utf8Error;
 use std::string::FromUtf8Error;
 use std::{fmt, io};
 
@@ -9,9 +11,13 @@ pub enum FrameError {
     Encoding(io::Error),
     InvalidFrame,
     InvalidType,
+    Incomplete,
     StringFromUTF8(FromUtf8Error),
+    StrFromUTF8(std::str::Utf8Error),
     IntFromUTF8(ParseIntError),
     UnexpectedEOF,
+    ConnectionReset,
+    ConnectionRead(io::Error),
 }
 
 impl Display for FrameError {
@@ -24,6 +30,12 @@ impl Display for FrameError {
             FrameError::UnexpectedEOF => write!(f, "connection abruptly closed"),
             FrameError::StringFromUTF8(err) => write!(f, "cannot convert bytes to string: {}", err),
             FrameError::IntFromUTF8(err) => write!(f, "cannot convert bytes to int: {}", err),
+            FrameError::ConnectionReset => write!(f, "connection reset by peer"),
+            FrameError::ConnectionRead(err) => {
+                write!(f, "generic error while reading on connection: {}", err)
+            }
+            FrameError::Incomplete => write!(f, "frame is incomplete"),
+            FrameError::StrFromUTF8(err) => write!(f, "cannot convert bytes to &str: {}", err),
         }
     }
 }
@@ -34,6 +46,9 @@ impl std::error::Error for FrameError {}
 // Convert io::Error to FrameError::Encoding
 impl From<io::Error> for FrameError {
     fn from(err: io::Error) -> Self {
+        if err.kind() == ErrorKind::UnexpectedEof {
+            return FrameError::EOF;
+        }
         FrameError::Encoding(err)
     }
 }
@@ -41,6 +56,12 @@ impl From<io::Error> for FrameError {
 impl From<FromUtf8Error> for FrameError {
     fn from(value: FromUtf8Error) -> Self {
         FrameError::StringFromUTF8(value)
+    }
+}
+
+impl From<Utf8Error> for FrameError {
+    fn from(value: Utf8Error) -> Self {
+        FrameError::StrFromUTF8(value)
     }
 }
 
@@ -56,7 +77,7 @@ pub enum CommandError {
     Unknown(String),
     Malformed(String), // string is command name
     InvalidCmdFrame,
-    Connection,
+    Connection(io::Error),
     FrameDecode(FrameError), // this variant is a wrapper of FrameError
 }
 
@@ -75,8 +96,8 @@ impl Display for CommandError {
             CommandError::InvalidCmdFrame => {
                 write!(f, "frame is an array but cannot be a valid command")
             }
-            CommandError::Connection => {
-                write!(f, "network error: error while writing to network")
+            CommandError::Connection(e) => {
+                write!(f, "network error: error while writing to network: {}", e)
             }
             CommandError::FrameDecode(e) => {
                 write!(f, "{}", e)
@@ -92,6 +113,11 @@ pub enum HandleCommandError {
     Command(CommandError),
 }
 
+impl From<io::Error> for HandleCommandError {
+    fn from(error: io::Error) -> Self {
+        HandleCommandError::Frame(FrameError::from(error))
+    }
+}
 impl From<FrameError> for HandleCommandError {
     fn from(error: FrameError) -> Self {
         HandleCommandError::Frame(error)
