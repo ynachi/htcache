@@ -21,10 +21,15 @@ impl Command for Del {
         response_frame.write_to(dest).await
     }
 
-    fn from(frame: &Frame) -> Result<Self, CommandError> {
-        let content = cmd::check_cmd_frame(frame, 2, None, "DEL")?;
+    fn from(frames: Vec<Frame>) -> Result<Self, CommandError> {
+        if frames.len() < 2 {
+            return Err(CommandError::Malformed(
+                "DEL command requires at least one key".to_string(),
+            ));
+        }
         let mut cmd = new();
-        for f in content.iter().skip(1) {
+        // skip the command name
+        for f in frames.iter().skip(1) {
             if let Frame::Bulk(value) = f {
                 cmd.keys.push(value.clone())
             }

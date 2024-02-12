@@ -291,48 +291,6 @@ fn get_bulk_string(buf: &mut Cursor<&[u8]>) -> Result<String, FrameError> {
     Err(FrameError::Incomplete)
 }
 
-// fn get_bulk_string(buf: &mut Cursor<&[u8]>) -> Result<String, FrameError> {
-//     if buf.remaining() == 0 {
-//         return Err(FrameError::Incomplete);
-//     }
-//     let start = (buf.position() + 1) as usize;
-//     let (bulk_size, content_start_index) = get_bulk_size(buf, start)?;
-//     let content_end_index = content_start_index + bulk_size - 1;
-//     get_bulk_frame_content(buf, content_start_index, content_end_index)
-// }
-
-// fn get_bulk_size(buf: &mut Cursor<&[u8]>, start: usize) -> Result<(usize, usize), FrameError> {
-//     let end = buf.get_ref().len() - 1;
-//     for i in start..end {
-//         if buf.get_ref()[i] == b'\n' && buf.get_ref()[i - 1] == b'\r' {
-//             let data_slice = &buf.get_ref()[start..i - 1];
-//             let data_str = str::from_utf8(data_slice)?;
-//             let bulk_size = data_str.parse()?;
-//             let content_start_index = i + 1;
-//             return Ok((bulk_size, content_start_index));
-//         }
-//     }
-//     debug!("incomplete in get_bulk_size");
-//     Err(FrameError::Incomplete)
-// }
-
-// fn get_bulk_frame_content(
-//     buf: &mut Cursor<&[u8]>,
-//     content_start_index: usize,
-//     content_end_index: usize,
-// ) -> Result<String, FrameError> {
-//     if content_end_index + 2 < buf.get_ref().len()
-//         && buf.get_ref()[content_end_index + 1] == b'\r'
-//         && buf.get_ref()[content_end_index + 2] == b'\n'
-//     {
-//         let data_slice = &buf.get_ref()[content_start_index..=content_end_index];
-//         buf.set_position((content_end_index + 2) as u64);
-//         return Ok(str::from_utf8(data_slice)?.to_owned());
-//     }
-//     debug!("incomplete in get_bulk_frame_content");
-//     Err(FrameError::Incomplete)
-// }
-
 /// decode_array decodes a frame Array from a reader.
 /// The tag identifying the frame is considered to be already read.
 fn decode_array(buf: &mut Cursor<&[u8]>) -> Result<Frame, FrameError> {

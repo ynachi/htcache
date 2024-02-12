@@ -1,4 +1,4 @@
-use crate::cmd::{self, Command};
+use crate::cmd::{self, parse_frame, Command};
 use crate::error::FrameError;
 use crate::error::{CommandError, HandleCommandError};
 use crate::frame::Frame;
@@ -50,6 +50,7 @@ impl Connection {
             if len == 0 {
                 return if self.buffer.is_empty() {
                     // Connection gracefully closed
+                    debug!("connection gracefully terminated by client, closing ...");
                     Err(FrameError::EOF)
                 } else {
                     // unintended connection reset
@@ -121,16 +122,17 @@ impl Connection {
         // get frame fist
         let frame = self.read_frame().await?;
         debug!("received command frame: {:?}", frame);
-        let cmd_name = cmd::get_name(&frame)?;
-        self.apply_command(&cmd_name, &frame).await;
+        // parse frame
+        let (cmd_name, frames) = parse_frame(frame)?;
+        self.apply_command(&cmd_name, frames).await;
         Ok(())
     }
 
-    async fn execute_command<Cmd>(&mut self, frame: &Frame)
+    async fn execute_command<Cmd>(&mut self, frames: Vec<Frame>)
     where
         Cmd: Command,
     {
-        match Cmd::from(frame) {
+        match Cmd::from(frames) {
             Ok(command) => {
                 command
                     .apply(&mut self.writer, &self.state)
@@ -148,12 +150,12 @@ impl Connection {
         }
     }
 
-    async fn apply_command(&mut self, cmd_name: &str, frame: &Frame) {
+    async fn apply_command(&mut self, cmd_name: &str, frames: Vec<Frame>) {
         match cmd_name {
-            "PING" => self.execute_command::<cmd::Ping>(frame).await,
-            "SET" => self.execute_command::<cmd::Set>(frame).await,
-            "GET" => self.execute_command::<cmd::Get>(frame).await,
-            "DEL" => self.execute_command::<cmd::Del>(frame).await,
+            "PING" => self.execute_command::<cmd::Ping>(frames).await,
+            "SET" => self.execute_command::<cmd::Set>(frames).await,
+            "GET" => self.execute_command::<cmd::Get>(frames).await,
+            "DEL" => self.execute_command::<cmd::Del>(frames).await,
             _ => {
                 self.send_error(&HandleCommandError::Command(CommandError::Unknown(
                     cmd_name.to_string(),

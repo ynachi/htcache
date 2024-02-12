@@ -14,16 +14,8 @@
   <component name="ChangeListManager">
     <list default="true" id="6014c35b-c356-42a3-9550-bac009aceb4d" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/benches/htcache.rs" beforeDir="false" afterPath="$PROJECT_DIR$/benches/htcache.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cmd/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cmd/ping.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/ping.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/cmd/set.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/set.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/connection.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/connection.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/db/cache.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/db/cache.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/db/cmap.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/db/cmap.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/error.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/frame.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/server.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/server.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -115,7 +107,7 @@
     "WebServerToolWindowFactoryState": "false",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
-    "git-widget-placeholder": "from-high-cpu-tokio",
+    "git-widget-placeholder": "refactor-command",
     "go.import.settings.migrated": "true",
     "go.sdk.automatically.set": "true",
     "kotlin-language-version-configured": "true",
@@ -140,7 +132,7 @@
     <option name="runOnTheFly" value="true" />
     <option name="tool" value="Clippy" />
   </component>
-  <component name="RunManager" selected="Cargo.Run htcache">
+  <component name="RunManager" selected="Cargo.Test connection::test_read_frame_with_real_network">
     <configuration name="Run htcache" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="command" value="run --package htcache --bin htcache" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -221,8 +213,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Cargo.Run htcache" />
         <item itemvalue="Cargo.Test connection::test_read_frame_with_real_network" />
+        <item itemvalue="Cargo.Run htcache" />
         <item itemvalue="Cargo.Test db::cmap::tests::test_cmap" />
         <item itemvalue="Cargo.Test cmap::tests" />
       </list>
@@ -331,18 +323,13 @@
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/src/connection.rs</url>
-          <line>80</line>
-          <option name="timeStamp" value="1" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/frame.rs</url>
           <line>158</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/frame.rs</url>
-          <line>339</line>
+          <line>297</line>
           <option name="timeStamp" value="3" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
@@ -352,28 +339,13 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/connection.rs</url>
-          <line>167</line>
+          <line>169</line>
           <option name="timeStamp" value="6" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/frame.rs</url>
-          <line>342</line>
+          <line>300</line>
           <option name="timeStamp" value="7" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/src/frame.rs</url>
-          <line>294</line>
-          <option name="timeStamp" value="8" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/src/frame.rs</url>
-          <line>304</line>
-          <option name="timeStamp" value="9" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/src/cmd/ping.rs</url>
-          <line>25</line>
-          <option name="timeStamp" value="12" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/frame.rs</url>
