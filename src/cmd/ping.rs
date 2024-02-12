@@ -22,13 +22,18 @@ impl Command for Ping {
         response.write_to(dest).await
     }
 
-    fn from(frame: &Frame) -> Result<Self, error::CommandError> {
-        let content = cmd::check_cmd_frame(frame, 1, Some(2), "PING")?;
+    fn from(frames: Vec<Frame>) -> Result<Self, error::CommandError> {
+        let len = frames.len();
+        if len > 2 {
+            return Err(error::CommandError::Malformed(
+                "Ping command requires at most 1 arguments".to_string(),
+            ));
+        }
         let mut cmd = new();
-        if content.len() == 1 {
+        if len == 1 {
             return Ok(cmd);
         }
-        if let Frame::Bulk(value) = &content[1] {
+        if let Frame::Bulk(value) = &frames[1] {
             cmd.message = Some(value.into());
         }
         Ok(cmd)

@@ -58,11 +58,13 @@ impl Server {
             let conn_string = self.tcp_listener.accept().await;
             match conn_string {
                 Ok((socket, addr)) => {
+                    println!("new connection established: {}", addr);
                     debug!("new connection established: {}", addr);
                     // Process each socket in parallel.
                     // Each connection needs to read and update the state so create a shared reference of the state
                     // and share it to the process_socket function.
                     let db = self.cache.db();
+
                     tokio::spawn(async move {
                         process_socket(socket, db).await;
                     });

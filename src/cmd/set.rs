@@ -22,13 +22,17 @@ impl Command for Set {
         response.write_to(dest).await
     }
 
-    fn from(frame: &Frame) -> Result<Self, error::CommandError> {
-        let content = cmd::check_cmd_frame(frame, 3, Some(3), "SET")?;
+    fn from(frames: Vec<Frame>) -> Result<Self, error::CommandError> {
+        if frames.len() != 3 {
+            return Err(error::CommandError::Malformed(
+                "SET command requires 2 arguments".to_string(),
+            ));
+        }
         let mut cmd = new();
-        if let Frame::Bulk(value) = &content[1] {
+        if let Frame::Bulk(value) = &frames[1] {
             cmd.key = value.to_string();
         }
-        if let Frame::Bulk(value) = &content[2] {
+        if let Frame::Bulk(value) = &frames[2] {
             cmd.value = value.to_string();
         }
         Ok(cmd)

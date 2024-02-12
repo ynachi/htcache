@@ -22,10 +22,15 @@ impl Command for Get {
         response_frame.write_to(dest).await
     }
 
-    fn from(frame: &Frame) -> Result<Self, error::CommandError> {
-        let content = cmd::check_cmd_frame(frame, 2, Some(2), "GET")?;
+    fn from(frames: Vec<Frame>) -> Result<Self, error::CommandError> {
+        // cmd name is included
+        if frames.len() != 2 {
+            return Err(error::CommandError::Malformed(
+                "GET command requires 1 arguments".to_string(),
+            ));
+        }
         let mut cmd = new();
-        if let Frame::Bulk(value) = &content[1] {
+        if let Frame::Bulk(value) = &frames[1] {
             cmd.key = value.to_string();
         };
         Ok(cmd)
