@@ -3,19 +3,18 @@ use crate::error::FrameError;
 use crate::error::{CommandError, HandleCommandError};
 use crate::frame::Frame;
 use crate::{db, frame};
+use async_std::io::prelude::*;
+use async_std::io::{BufReader, BufWriter};
+use async_std::net::TcpStream;
 use bytes::{Buf, BytesMut};
 use std::io;
 use std::sync::{Arc, Condvar, Mutex};
-use tokio::io::{AsyncReadExt, AsyncWriteExt, BufWriter};
-use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
-use tokio::net::TcpStream;
 use tracing::{debug, error};
-
 /// Represents a connection to the server. It contains the TCPStream returned by the connection
 /// and a read buffer
 pub struct Connection {
-    reader: OwnedReadHalf,
-    writer: BufWriter<OwnedWriteHalf>,
+    reader: BufReader<TcpStream>,
+    writer: BufWriter<TcpStream>,
     //
     buffer: BytesMut,
     // a connection receives a reference of a Cache.
@@ -32,11 +31,12 @@ impl Connection {
         // // stream_clone is a reference count for stream
         // let read_clone = stream.clo()?;
         // let write_clone = stream.try_clone()?;
-        let (read_half, write_half) = stream.into_split();
+        let stream_clone = stream.clone();
         // let mut reader = BufReader::new(read_half);
-        let writer = BufWriter::new(write_half);
+        let writer = BufWriter::new(stream_clone);
+        let reader = BufReader::new(stream);
         Ok(Self {
-            reader: read_half,
+            reader,
             writer,
             buffer: BytesMut::with_capacity(4 * 1024),
             state,
@@ -46,7 +46,7 @@ impl Connection {
     /// read_frame reads a frame from this connection.
     pub async fn read_frame(&mut self) -> Result<Frame, FrameError> {
         loop {
-            let len = self.reader.read_buf(&mut self.buffer).await?;
+            let len = self.reader.read_until(&mut self.buffer).await?;
             if len == 0 {
                 return if self.buffer.is_empty() {
                     // Connection gracefully closed

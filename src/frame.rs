@@ -2,14 +2,14 @@
 //! https://redis.io/docs/reference/protocol-spec/
 
 use crate::error::FrameError;
+use async_std::io::prelude::BufReadExt;
+use async_std::io::{BufReader, BufWriter, Read, ReadExt, Write, WriteExt};
 use bytes::Buf;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::io;
 use std::io::Cursor;
-use tokio::io::AsyncWrite;
-use tokio::io::AsyncWriteExt;
 use tracing::debug;
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
@@ -143,7 +143,10 @@ impl Frame {
     }
 
     /// write_to writes a frame to a writer
-    pub async fn write_to<T: AsyncWrite + Unpin>(&self, w: &mut T) -> Result<(), io::Error> {
+    pub async fn write_to<T: WriteExt + Unpin>(
+        &self,
+        w: &mut BufWriter<T>,
+    ) -> Result<(), io::Error> {
         let bytes = self.encode();
         w.write_all(bytes.as_slice()).await?;
         w.flush().await?;
@@ -155,33 +158,33 @@ impl Frame {
 /// It first identifies the frame type and decodes it accordingly.
 /// Keep in mind that the buffer might be partial and manage those cases.
 /// Errors are generally malformed frames.
-pub fn decode(buf: &mut Cursor<&[u8]>) -> Result<Frame, FrameError> {
-    let tag = peek_byte(buf)?;
+pub async fn decode<T: ReadExt + Unpin>(stream: &mut BufReader<T>) -> Result<Frame, FrameError> {
+    let tag = read_u8(stream).await?;
     match tag {
         // Simple String
         b'+' => {
-            let content = get_simple_string(buf)?;
+            let content = get_simple_string(stream).await?;
             Ok(Frame::Simple(content))
         }
         // Error
         b'-' => {
-            let content = get_simple_string(buf)?;
+            let content = get_simple_string(stream).await?;
             Ok(Frame::Error(content))
         }
         // Integer
         b':' => {
-            let content_string = get_simple_string(buf)?;
+            let content_string = get_simple_string(stream).await?;
             let content = content_string.parse()?;
             Ok(Frame::Integer(content))
         }
         // Bulk
         b'$' => {
-            let content = get_bulk_string(buf)?;
+            let content = get_bulk_string(stream).await?;
             Ok(Frame::Bulk(content))
         }
         // Bool
         b'#' => {
-            let content = get_simple_string(buf)?;
+            let content = get_simple_string(stream).await?;
             if content == *"t" {
                 Ok(Frame::Boolean(true))
             } else if content == *"f" {
@@ -192,7 +195,7 @@ pub fn decode(buf: &mut Cursor<&[u8]>) -> Result<Frame, FrameError> {
         }
         // Nil frame
         b'_' => {
-            let content = get_simple_string(buf)?;
+            let content = get_simple_string(stream).await?;
             if content == *"" {
                 Ok(Frame::Null)
             } else {
@@ -200,9 +203,9 @@ pub fn decode(buf: &mut Cursor<&[u8]>) -> Result<Frame, FrameError> {
             }
         }
         // Array
-        b'*' => decode_array(buf),
+        b'*' => decode_array(stream).await,
         // Map
-        b'%' => decode_map(buf),
+        b'%' => decode_map(stream).await,
         _ => Err(FrameError::InvalidType),
     }
 }
@@ -214,6 +217,15 @@ fn peek_byte(buf: &mut Cursor<&[u8]>) -> Result<u8, FrameError> {
     Ok(buf.chunk()[0])
 }
 
+async fn read_u8<T: ReadExt + Unpin>(stream: &mut BufReader<T>) -> Result<u8, FrameError> {
+    let mut buffer = [0; 1];
+    let size = stream.read(&mut buffer).await?;
+    if size == 0 {
+        return Err(FrameError::EOF);
+    }
+    Ok(buffer[0])
+}
+
 const LF: u8 = b'\n';
 const CR: u8 = b'\r';
 
@@ -221,87 +233,72 @@ const CR: u8 = b'\r';
 /// This function returns an error if there is any single CR or LF as it is not expected. The function advance the io::Cursor
 /// at the appropriate position before returning to the caller in case of success or errors. All errors but FrameError::Incomplete
 /// advance the cursor position.
-fn get_simple_string(buf: &mut std::io::Cursor<&[u8]>) -> Result<String, FrameError> {
-    if buf.remaining() == 0 {
-        return Err(FrameError::Incomplete);
+async fn get_simple_string<T: ReadExt + Unpin>(
+    stream: &mut BufReader<T>,
+) -> Result<String, FrameError> {
+    let mut buff: Vec<u8> = Vec::new();
+    let num_bytes = stream.read_until(LF, &mut buff).await?;
+
+    if num_bytes == 0 {
+        return Err(FrameError::EOF);
     }
 
-    // The fist byte is the token, start at the second which is supposed to contain the actual data
-    let start = (buf.position() + 1) as usize;
-    let end = buf.get_ref().len() - 1;
-
-    for i in start..end {
-        let current_byte = buf.get_ref()[i];
-
-        if current_byte == LF && buf.get_ref()[i - 1] == CR {
-            // CRLF found, update the position at the LF
-            buf.set_position((i + 1) as u64);
-            let data = buf.get_ref()[start..i].to_vec();
-            return Ok(String::from_utf8(data)?);
-        }
-
-        // there should not be CR alone in the middle so any CR should be followed by LF
-        if current_byte == CR && i + 1 < end && buf.get_ref()[i + 1] == LF {
-            // CRLF found, update the position at the LF
-            // @TODO risk of panic, to check
-            buf.set_position((i + 2) as u64);
-            let data = buf.get_ref()[start..i].to_vec();
-            return Ok(String::from_utf8(data)?);
-        }
+    // A valid frame would be at least 2 chars (CRLF)
+    if num_bytes < 2 || buff[num_bytes - 1] != CR {
+        // This function will be called with a frame type in mind. Here we are looking to a simple
+        // frame and we got something which is definitively not one.
+        debug!("found a non delimiter LF in a simple frame");
+        return Err(FrameError::InvalidFrame);
     }
-    debug!("incomplete in get_simple_string");
-    Err(FrameError::Incomplete)
+
+    // Checking if the frame if there is CR in the middle is expensive. Because it means reading
+    // to LF first, then checking in the read bytes if there is a CR in the middle
+    // which is not a delimiter.
+    // Because of that, I have decided to not check that.
+    // We will make sure this does not happen in other places but while reading on the network.
+    // With this implementation, unlike the original RESP protocol,
+    // my frame could contain a singleton CR and be valid.
+
+    // We have choosen to not check if we have valid utf8 for performance
+    Ok(String::from_utf8_lossy(&buff[..num_bytes - 2]).to_string())
 }
 
 /// find_crlf_bulk finds the position of the next crlf. It sets the position of CRLF, cursor at LF if found or an error if not.
 /// Unlike .find_crlf_simple, this bytes can contain CR or LF in the middle. The io cursor is not modified by this function.
 ///
-fn get_bulk_string(buf: &mut Cursor<&[u8]>) -> Result<String, FrameError> {
-    if buf.remaining() == 0 {
-        return Err(FrameError::Incomplete);
+async fn get_bulk_string<T: ReadExt + Unpin>(
+    stream: &mut BufReader<T>,
+) -> Result<String, FrameError> {
+    let bulk_size = get_simple_string(stream).await?;
+    let bulk_size = bulk_size.parse()?;
+
+    // now read the number of relevant bytes + CRLF
+    // reminder: bulk frame is like $<length>\r\n<data>\r\n where length == len(data)
+    let mut buff = vec![0; bulk_size + 2];
+    let read_size = stream.read(&mut buff).await?;
+
+    if read_size == 0 {
+        return Err(FrameError::EOF);
     }
-    // The fist byte is the token, start at the second which is supposed to contain the actual data
-    let start = (buf.position() + 1) as usize;
-    let end = buf.get_ref().len() - 1;
-    let mut bulk_size = 0;
-    let mut content_start_index = 0;
-    // get bulk frame size before
-    for i in start..end {
-        // get frame size before
-        let current_byte = buf.get_ref()[i];
-        if current_byte == b'\n' && buf.get_ref()[i - 1] == b'\r' {
-            // CRLF found, update the position at the LF
-            let data = buf.get_ref()[start..i - 1].to_vec();
-            let data = String::from_utf8(data)?;
-            bulk_size = data.parse()?;
-            content_start_index = i + 1;
-            break;
-        }
+
+    if read_size != bulk_size + 2 {
+        return Err(FrameError::InvalidFrame);
     }
-    // get bulk frame content
-    let content_end_index = content_start_index + bulk_size - 1;
-    if content_end_index + 2 <= end
-        && buf.get_ref()[content_end_index + 1] == CR
-        && buf.get_ref()[content_end_index + 2] == LF
-    {
-        let data = buf.get_ref()[content_start_index..=content_end_index].to_vec();
-        buf.set_position((content_end_index + 3) as u64);
-        return Ok(String::from_utf8(data)?);
-    }
-    Err(FrameError::Incomplete)
+
+    Ok(String::from_utf8_lossy(&buff[..bulk_size]).to_string())
 }
 
 /// decode_array decodes a frame Array from a reader.
 /// The tag identifying the frame is considered to be already read.
-fn decode_array(buf: &mut Cursor<&[u8]>) -> Result<Frame, FrameError> {
+async fn decode_array<T: ReadExt + Unpin>(stream: &mut BufReader<T>) -> Result<Frame, FrameError> {
     // Read the length first
-    let array_length = get_simple_string(buf)?;
+    let array_length = get_simple_string(stream).await?;
     let array_length = array_length.parse()?;
 
     let mut arr = Frame::array();
 
     for _ in 0..array_length {
-        let fr = decode(buf)?;
+        let fr = decode(stream).await?;
         arr.push_back(fr)?;
     }
 
@@ -310,16 +307,16 @@ fn decode_array(buf: &mut Cursor<&[u8]>) -> Result<Frame, FrameError> {
 
 /// decode_map decodes a frame map from a reader.
 /// The tag identifying the frame is considered to be already read.
-fn decode_map(buf: &mut Cursor<&[u8]>) -> Result<Frame, FrameError> {
+async fn decode_map<T: ReadExt + Unpin>(stream: &mut BufReader<T>) -> Result<Frame, FrameError> {
     // Read the length first
-    let map_length = get_simple_string(buf)?;
+    let map_length = get_simple_string(stream).await?;
     let map_length = map_length.parse()?;
 
     let mut map = Frame::map();
 
     for _ in 0..map_length {
-        let key = decode(buf)?;
-        let value = decode(buf)?;
+        let key = decode(stream).await?;
+        let value = decode(stream).await?;
         map.add_map_frame(key, value)?;
     }
 
