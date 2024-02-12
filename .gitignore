@@ -2,3 +2,4 @@
 dump.rdb
 go-benchmark.iml
 .DS_Store
+/testdata
