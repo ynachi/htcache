@@ -186,7 +186,7 @@ impl State {
         prev_item
     }
 
-    pub fn set_kv(&self, key: &str, value: &str, ttl: Option<Duration>) {
+    pub fn set_kv(&self, key: &str, value: &str, _ttl: Option<Duration>) {
         // Insert
         // let expiration_time = if let Some(ttl) = ttl {
         //     Instant::now() + ttl

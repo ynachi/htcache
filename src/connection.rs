@@ -6,15 +6,10 @@ use crate::{db, frame};
 use bytes::{Buf, BytesMut};
 use std::io;
 use std::sync::{Arc, Condvar, Mutex};
-use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, BufWriter};
 use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
 use tokio::net::TcpStream;
 use tracing::{debug, error};
-
-/// The client should give up after a timeout attempt to write to the stream.
-//@TODO: Set as application config
-const WRITE_TIMEOUT: Option<Duration> = Some(Duration::new(0, 1000));
 
 /// Represents a connection to the server. It contains the TCPStream returned by the connection
 /// and a read buffer

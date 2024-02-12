@@ -16,7 +16,7 @@ use tokio::io::AsyncWrite;
 use Frame::Bulk;
 
 /// Command represents a htcache command
-pub trait Command {
+pub(crate) trait Command {
     // apply applies the command
     // @TODO: This method should take DB and Writer as args.
     // Will do after I define them.

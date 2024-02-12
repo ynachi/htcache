@@ -6,13 +6,11 @@ use bytes::Buf;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
+use std::io;
 use std::io::Cursor;
-use std::{io, str};
 use tokio::io::AsyncWrite;
 use tokio::io::AsyncWriteExt;
 use tracing::debug;
-
-const MAX_ITEM_SIZE: usize = 4 * 1024;
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub enum Frame {
@@ -214,13 +212,6 @@ fn peek_byte(buf: &mut Cursor<&[u8]>) -> Result<u8, FrameError> {
         return Err(FrameError::Incomplete);
     }
     Ok(buf.chunk()[0])
-}
-
-fn get_byte(buf: &mut Cursor<&[u8]>) -> Result<u8, FrameError> {
-    if !buf.has_remaining() {
-        return Err(FrameError::Incomplete);
-    }
-    Ok(buf.get_u8())
 }
 
 const LF: u8 = b'\n';

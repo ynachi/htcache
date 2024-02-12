@@ -2,7 +2,6 @@ use crate::connection::Connection;
 use crate::db;
 use crate::db::State;
 use crate::error::{FrameError, HandleCommandError};
-use crate::threadpool;
 use std::fmt::Debug;
 use std::io;
 use std::sync::Arc;

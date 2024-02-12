@@ -1,7 +1,6 @@
 use crate::cmd::Command;
 use crate::frame::Frame;
 use crate::{cmd, db, error};
-use std::io::Write;
 use std::sync::Arc;
 use tokio::io::AsyncWrite;
 

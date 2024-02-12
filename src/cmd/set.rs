@@ -2,9 +2,7 @@ use crate::cmd;
 use crate::cmd::Command;
 use crate::frame::Frame;
 use crate::{db, error};
-use std::io::Write;
 use std::sync::Arc;
-use std::time::Duration;
 use tokio::io::AsyncWrite;
 
 pub struct Set {

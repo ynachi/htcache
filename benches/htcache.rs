@@ -1,15 +1,12 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use dashmap::DashMap;
 use htcache::db::cmap::CMap;
-use htcache::db::CacheEntry;
+
 use rand::distributions::{Alphanumeric, DistString};
-use rand::Rng;
+
 use rayon::prelude::*; // For threading
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-
-use htcache::db;
-use std::time::Instant; // To use your CacheEntry type
 
 use csv::ReaderBuilder;
 use std::error::Error;
@@ -31,8 +28,6 @@ pub fn read_csv_file() -> Result<Vec<(String, String)>, Box<dyn Error>> {
 }
 
 pub fn generate_string() -> String {
-    let mut rng = rand::thread_rng();
-    // let rand_number: usize = rng.gen_range(50..50);
     Alphanumeric.sample_string(&mut rand::thread_rng(), 30)
 }
 

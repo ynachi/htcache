@@ -162,10 +162,6 @@ impl CMap {
         count
     }
 
-    fn contains_key(&self, key: &str) -> bool {
-        self.get_shard_by_key(key).lock().unwrap().contains_key(key)
-    }
-
     pub fn size(&self) -> usize {
         self.size.load(Ordering::SeqCst)
     }

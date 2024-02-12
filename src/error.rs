@@ -1,6 +1,5 @@
 use std::fmt::{Debug, Display, Formatter, Result};
 use std::io::ErrorKind;
-use std::net::Shutdown::Write;
 use std::num::ParseIntError;
 use std::str::Utf8Error;
 use std::string::FromUtf8Error;
