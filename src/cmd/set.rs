@@ -1,9 +1,9 @@
-use crate::cmd;
 use crate::cmd::Command;
+use crate::db::State;
+use crate::error;
 use crate::frame::Frame;
-use crate::{db, error};
+use std::io::{BufWriter, Write};
 use std::sync::Arc;
-use tokio::io::AsyncWrite;
 
 pub struct Set {
     key: String,
@@ -12,14 +12,10 @@ pub struct Set {
 }
 
 impl Command for Set {
-    async fn apply<T: AsyncWrite + Unpin>(
-        &self,
-        dest: &mut T,
-        cache: &Arc<db::State>,
-    ) -> std::io::Result<()> {
+    fn apply<T: Write>(&self, dest: &mut BufWriter<T>, cache: &Arc<State>) -> std::io::Result<()> {
         cache.set_kv(&self.key, &self.value, None);
         let response = Frame::Simple("OK".into());
-        response.write_to(dest).await
+        response.write_to(dest)
     }
 
     fn from(frames: Vec<Frame>) -> Result<Self, error::CommandError> {

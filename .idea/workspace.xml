@@ -16,8 +16,15 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cmd/del.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/del.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cmd/get.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/get.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cmd/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cmd/ping.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/ping.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/cmd/set.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/cmd/set.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/connection.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/connection.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/frame.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/server.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/server.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -72,7 +79,7 @@
     "Cargo.Run htcache.executor": "Debug",
     "Cargo.Run redisy.executor": "Debug",
     "Cargo.Test cmap::tests.executor": "Run",
-    "Cargo.Test connection::test_read_frame_with_real_network.executor": "Run",
+    "Cargo.Test connection::test_read_frame_with_real_network.executor": "Debug",
     "Cargo.Test connection::tests::test_read_frame.executor": "Run",
     "Cargo.Test db::cmap::tests::test_cmap.executor": "Run",
     "Cargo.Test db::htcache::tests::test_cache_concurrent.executor": "Run",
@@ -108,7 +115,7 @@
     "WebServerToolWindowFactoryState": "false",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
-    "git-widget-placeholder": "test-async-std",
+    "git-widget-placeholder": "get-rid-of-async",
     "go.import.settings.migrated": "true",
     "go.sdk.automatically.set": "true",
     "kotlin-language-version-configured": "true",
@@ -133,7 +140,7 @@
     <option name="runOnTheFly" value="true" />
     <option name="tool" value="Clippy" />
   </component>
-  <component name="RunManager" selected="Cargo.Test connection::test_read_frame_with_real_network">
+  <component name="RunManager" selected="Cargo.Run htcache">
     <configuration name="Run htcache" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="command" value="run --package htcache --bin htcache" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -214,8 +221,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Cargo.Test connection::test_read_frame_with_real_network" />
         <item itemvalue="Cargo.Run htcache" />
+        <item itemvalue="Cargo.Test connection::test_read_frame_with_real_network" />
         <item itemvalue="Cargo.Test db::cmap::tests::test_cmap" />
         <item itemvalue="Cargo.Test cmap::tests" />
       </list>
@@ -300,6 +307,8 @@
       <workItem from="1707118827906" duration="23797000" />
       <workItem from="1707254679099" duration="31797000" />
       <workItem from="1707512215169" duration="3018000" />
+      <workItem from="1707811471982" duration="849000" />
+      <workItem from="1707815327909" duration="2575000" />
     </task>
     <servers />
   </component>
@@ -325,28 +334,33 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/frame.rs</url>
-          <line>161</line>
+          <line>154</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/frame.rs</url>
-          <line>294</line>
+          <line>283</line>
           <option name="timeStamp" value="3" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/frame.rs</url>
-          <line>213</line>
-          <option name="timeStamp" value="4" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/src/connection.rs</url>
-          <line>169</line>
-          <option name="timeStamp" value="6" />
+          <line>286</line>
+          <option name="timeStamp" value="7" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/frame.rs</url>
-          <line>297</line>
-          <option name="timeStamp" value="7" />
+          <line>208</line>
+          <option name="timeStamp" value="8" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/frame.rs</url>
+          <line>217</line>
+          <option name="timeStamp" value="9" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/frame.rs</url>
+          <line>256</line>
+          <option name="timeStamp" value="10" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

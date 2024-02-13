@@ -4,8 +4,8 @@ use crate::db::State;
 use crate::error::{FrameError, HandleCommandError};
 use std::fmt::Debug;
 use std::io;
+use std::net::{TcpListener, TcpStream};
 use std::sync::Arc;
-use tokio::net::{TcpListener, TcpStream};
 use tracing::{debug, error, info};
 
 #[derive(Debug)]
@@ -22,7 +22,7 @@ pub struct Server {
 /// It is required in this case because creating a new server requires
 ///  preparing threads that it will use to process the requests.
 /// And, creating threads is likely to fail for reasons related to the OS.
-pub async fn create_server(
+pub fn create_server(
     server_ip: String,
     server_port: u16,
     // worker_count: usize,
@@ -31,7 +31,8 @@ pub async fn create_server(
     eviction_threshold: u8,
 ) -> io::Result<Server> {
     // let thread_pool = threadpool::ThreadPool::new(worker_count)?;
-    let tcp_listener = TcpListener::bind((server_ip, server_port)).await?;
+    let ip = format!("{}:{}", server_ip, server_port);
+    let tcp_listener = TcpListener::bind(ip)?;
 
     info!("htcache server initialized");
 
@@ -49,24 +50,22 @@ impl Server {
     /// a separate thread.
     /// We started with our own implementation of a thread pool.
     /// We then, moved to tokio green threads.
-    pub async fn listen(&self) {
+    pub fn listen(&self) {
         // show server's info to the user
         info!("{:?}", self);
         info!("htcache server ready for new connections");
-
+        let pool = crate::threadpool::ThreadPool::new(80).unwrap();
         loop {
-            let conn_string = self.tcp_listener.accept().await;
+            let conn_string = self.tcp_listener.accept();
             match conn_string {
                 Ok((socket, addr)) => {
-                    println!("new connection established: {}", addr);
                     debug!("new connection established: {}", addr);
                     // Process each socket in parallel.
                     // Each connection needs to read and update the state so create a shared reference of the state
                     // and share it to the process_socket function.
                     let db = self.cache.db();
-
-                    tokio::spawn(async move {
-                        process_socket(socket, db).await;
+                    pool.execute(move || {
+                        process_socket(socket, db);
                     });
                 }
                 Err(e) => {
@@ -77,11 +76,11 @@ impl Server {
     }
 }
 
-async fn process_socket(socket: TcpStream, db: Arc<State>) {
+fn process_socket(socket: TcpStream, db: Arc<State>) {
     let conn = Connection::new(socket, db);
     match conn {
         Ok(mut conn) => {
-            process_commands(&mut conn).await;
+            process_commands(&mut conn);
         }
         Err(e) => {
             log_error("failed to create connection object", e);
@@ -89,9 +88,9 @@ async fn process_socket(socket: TcpStream, db: Arc<State>) {
     }
 }
 
-async fn process_commands(conn: &mut Connection) {
+fn process_commands(conn: &mut Connection) {
     loop {
-        match conn.handle_command().await {
+        match conn.handle_command() {
             Ok(_) => {}
             Err(HandleCommandError::Frame(FrameError::EOF)) => {
                 debug!(
