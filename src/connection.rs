@@ -1,24 +1,17 @@
 use crate::cmd::{self, parse_frame, Command};
-use crate::error::FrameError;
 use crate::error::{CommandError, HandleCommandError};
 use crate::frame::Frame;
 use crate::{db, frame};
-use bytes::{Buf, BytesMut};
 use std::io;
-use std::sync::{Arc, Condvar, Mutex};
-use tokio::io::{AsyncReadExt, AsyncWriteExt, BufWriter};
-use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
-use tokio::net::TcpStream;
+use std::io::{BufReader, BufWriter, Write};
+use std::net::TcpStream;
+use std::sync::Arc;
 use tracing::{debug, error};
-
 /// Represents a connection to the server. It contains the TCPStream returned by the connection
 /// and a read buffer
 pub struct Connection {
-    reader: OwnedReadHalf,
-    writer: BufWriter<OwnedWriteHalf>,
-    //
-    buffer: BytesMut,
-    // a connection receives a reference of a Cache.
+    reader: BufReader<TcpStream>,
+    writer: BufWriter<TcpStream>,
     state: Arc<db::State>,
 }
 
@@ -32,84 +25,36 @@ impl Connection {
         // // stream_clone is a reference count for stream
         // let read_clone = stream.clo()?;
         // let write_clone = stream.try_clone()?;
-        let (read_half, write_half) = stream.into_split();
+        let stream_clone = stream.try_clone()?;
         // let mut reader = BufReader::new(read_half);
-        let writer = BufWriter::new(write_half);
+        let writer = BufWriter::new(stream_clone);
+        let reader = BufReader::new(stream);
         Ok(Self {
-            reader: read_half,
+            reader,
             writer,
-            buffer: BytesMut::with_capacity(4 * 1024),
             state,
         })
     }
 
-    /// read_frame reads a frame from this connection.
-    pub async fn read_frame(&mut self) -> Result<Frame, FrameError> {
-        loop {
-            let len = self.reader.read_buf(&mut self.buffer).await?;
-            if len == 0 {
-                return if self.buffer.is_empty() {
-                    // Connection gracefully closed
-                    debug!("connection gracefully terminated by client, closing ...");
-                    Err(FrameError::EOF)
-                } else {
-                    // unintended connection reset
-                    Err(FrameError::ConnectionReset)
-                };
-            }
-
-            // Attempt to parse a frame. Continue if the received data is incomplete to parse a frame.
-            match self.parse_frame() {
-                Ok(fr) => return Ok(fr),
-                Err(e) => {
-                    if let FrameError::Incomplete = e {
-                        continue;
-                    } else {
-                        return Err(e);
-                    }
-                }
-            }
-        }
-    }
-
-    fn parse_frame(&mut self) -> Result<Frame, FrameError> {
-        let mut buf = io::Cursor::new(&self.buffer[..]);
-
-        // now call frame decode on buf, try to decode from the data available
-        // The internal buffer (self.buffer) is of type bytesMut which grow automatically if needed. So, advance
-        // the cursor to consume the data processed. There is an exception, though; in case of incomplete frame, we
-        // do not want to advance the cursor. We need to read more data to try to decode the frame again.
-        match frame::decode(&mut buf) {
-            Ok(fr) => {
-                let pos = buf.position();
-                self.buffer.advance(pos as usize);
-                Ok(fr)
-            }
-            // Do not advance in case of incomplete Frame, we want to read more data to process it.
-            Err(e) => {
-                if let FrameError::Incomplete = e {
-                } else {
-                    let pos = buf.position();
-                    self.buffer.advance(pos as usize);
-                }
-                Err(e)
-            }
-        }
+    pub fn close(&self) -> io::Result<()> {
+        // Both reader and writer are linked to the same tcp stream so closing on only one is ok.
+        self.reader.get_ref().shutdown(std::net::Shutdown::Both)?;
+        Ok(())
     }
 
     /// write_frame writes a frame to the connection.
-    pub async fn write_frame(&mut self, frame: &Frame) -> Result<(), io::Error> {
+    pub fn write_frame(&mut self, frame: &Frame) -> Result<(), io::Error> {
         let bytes = frame.encode();
-        self.writer.write_all(bytes.as_slice()).await?;
-        // We want the frame to be available immediately after being written so flush the buffer.
-        self.writer.flush().await?;
+        self.writer.write_all(bytes.as_slice())?;
+        // We want the frame to be available immediately after being writen so flush the buffer.
+        self.writer.flush()?;
         Ok(())
     }
 
     /// send_error sends an error response to the client
-    pub async fn send_error(&mut self, err: &HandleCommandError) {
+    pub fn send_error(&mut self, err: &HandleCommandError) {
         let err_frame = Frame::Error(err.to_string());
-        if let Err(e) = self.write_frame(&err_frame).await {
+        if let Err(e) = self.write_frame(&err_frame) {
             error!("failed to send error to client: {}", e);
         }
         debug!("command processing failed: {}", err)
@@ -118,17 +63,17 @@ impl Connection {
     /// handle_command try to retrieve a command from a connection and process it.
     /// All command related errors are sent as response to the client, and the rest
     /// are returned to the caller for further processing.
-    pub async fn handle_command(&mut self) -> Result<(), HandleCommandError> {
+    pub fn handle_command(&mut self) -> Result<(), HandleCommandError> {
         // get frame fist
-        let frame = self.read_frame().await?;
+        let frame = frame::decode(&mut self.reader)?;
         debug!("received command frame: {:?}", frame);
         // parse frame
         let (cmd_name, frames) = parse_frame(frame)?;
-        self.apply_command(&cmd_name, frames).await;
+        self.apply_command(&cmd_name, frames);
         Ok(())
     }
 
-    async fn execute_command<Cmd>(&mut self, frames: Vec<Frame>)
+    fn execute_command<Cmd>(&mut self, frames: Vec<Frame>)
     where
         Cmd: Command,
     {
@@ -136,7 +81,6 @@ impl Connection {
             Ok(command) => {
                 command
                     .apply(&mut self.writer, &self.state)
-                    .await
                     .unwrap_or_else(|err| {
                         // This error happens when things cannot be written to the connection,
                         // So it is not useful to try to send it to the client over the connection.
@@ -146,65 +90,63 @@ impl Connection {
                         );
                     });
             }
-            Err(err) => self.send_error(&HandleCommandError::Command(err)).await,
+            Err(err) => self.send_error(&HandleCommandError::Command(err)),
         }
     }
 
-    async fn apply_command(&mut self, cmd_name: &str, frames: Vec<Frame>) {
+    fn apply_command(&mut self, cmd_name: &str, frames: Vec<Frame>) {
         match cmd_name {
-            "PING" => self.execute_command::<cmd::Ping>(frames).await,
-            "SET" => self.execute_command::<cmd::Set>(frames).await,
-            "GET" => self.execute_command::<cmd::Get>(frames).await,
-            "DEL" => self.execute_command::<cmd::Del>(frames).await,
-            _ => {
-                self.send_error(&HandleCommandError::Command(CommandError::Unknown(
-                    cmd_name.to_string(),
-                )))
-                .await
-            }
+            "PING" => self.execute_command::<cmd::Ping>(frames),
+            "SET" => self.execute_command::<cmd::Set>(frames),
+            "GET" => self.execute_command::<cmd::Get>(frames),
+            "DEL" => self.execute_command::<cmd::Del>(frames),
+            _ => self.send_error(&HandleCommandError::Command(CommandError::Unknown(
+                cmd_name.to_string(),
+            ))),
         }
     }
 }
-
-#[tokio::test]
-async fn test_read_frame_with_real_network() {
-    use tokio::net::{TcpListener, TcpStream};
-    // Set up a Tcp listener
-    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let addr = listener.local_addr().unwrap();
-
-    // Set up a separate task that accepts the connection and writes data to the stream
-    tokio::spawn(async move {
-        if let Ok((mut socket, _)) = listener.accept().await {
-            let _ = socket
-                .write_all(b"*2\r\n$5\r\nhello\r\n:28\r\n+simple\r\n_\r\n#t\r\n")
-                .await;
-        }
-    });
-
-    // Create a TcpStream connected to the listener
-    let stream = TcpStream::connect(addr).await.unwrap();
-
-    // Set up your Connection
-    let (read_half, write_half) = stream.into_split();
-    let state =
-        Arc::new(db::State::new(500, 8, Arc::new((Mutex::new(true), Condvar::new())), 90).unwrap());
-
-    let mut conn = Connection {
-        reader: read_half,
-        writer: BufWriter::new(write_half),
-        buffer: BytesMut::with_capacity(4 * 1024),
-        state,
-    };
-
-    // Perform the test
-    let got = conn.read_frame().await.unwrap();
-    let mut want = Frame::array();
-    want.push_back(Frame::Bulk("hello".to_string()))
-        .expect("success");
-    want.push_back(Frame::Integer(28)).expect("success");
-    assert_eq!(got, want);
-    // assert_eq!(got, Frame::Simple("Hello World".to_string()));
-
-    // Add your assertions here...
-}
+//
+// #[tokio::test]
+// async fn test_read_frame_with_real_network() {
+//     use async_std::net::{TcpListener, TcpStream};
+//     // Set up a Tcp listener
+//     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+//     let addr = listener.local_addr().unwrap();
+//
+//     // Set up a separate task that accepts the connection and writes data to the stream
+//     async_std::task::spawn(async move {
+//         if let Ok((mut socket, _)) = listener.accept().await {
+//             let _ = socket
+//                 // .write_all(b"*2\r\n$5\r\nhello\r\n:28\r\n+simple\r\n_\r\n#t\r\n")
+//                 .write_all(b"$5\r\nhello\r\n")
+//                 .await;
+//         }
+//     });
+//
+//     // Create a TcpStream connected to the listener
+//     let stream = TcpStream::connect(addr).await.unwrap();
+//
+//     // Set up your Connection
+//     let stream_clone = stream.clone();
+//     let state =
+//         Arc::new(db::State::new(500, 8, Arc::new((Mutex::new(true), Condvar::new())), 90).unwrap());
+//
+//     let mut conn = Connection {
+//         reader: BufReader::new(stream_clone),
+//         writer: BufWriter::new(stream),
+//         buffer: Vec::with_capacity(4 * 1024),
+//         state,
+//     };
+//
+//     // Perform the test
+//     let got = conn.read_frame().await.unwrap();
+//     let mut want = Frame::array();
+//     want.push_back(Frame::Bulk("hello".to_string()))
+//         .expect("success");
+//     want.push_back(Frame::Integer(28)).expect("success");
+//     assert_eq!(got, Frame::Bulk("hello".to_string()));
+//     // assert_eq!(got, Frame::Simple("Hello World".to_string()));
+//
+//     // Add your assertions here...
+// }

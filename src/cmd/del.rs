@@ -1,24 +1,19 @@
-use crate::cmd;
 use crate::cmd::Command;
 use crate::db::State;
 use crate::error::CommandError;
 use crate::frame::Frame;
+use std::io::{BufWriter, Write};
 use std::sync::Arc;
-use tokio::io::AsyncWrite;
 
 pub struct Del {
     keys: Vec<String>,
 }
 
 impl Command for Del {
-    async fn apply<T: AsyncWrite + Unpin>(
-        &self,
-        dest: &mut T,
-        cache: &Arc<State>,
-    ) -> std::io::Result<()> {
+    fn apply<T: Write>(&self, dest: &mut BufWriter<T>, cache: &Arc<State>) -> std::io::Result<()> {
         let deleted = cache.delete_entries(&self.keys);
         let response_frame = Frame::Integer(deleted as i64);
-        response_frame.write_to(dest).await
+        response_frame.write_to(dest)
     }
 
     fn from(frames: Vec<Frame>) -> Result<Self, CommandError> {
