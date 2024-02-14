@@ -7,8 +7,9 @@ use std::io::{BufReader, BufWriter, Write};
 use std::net::TcpStream;
 use std::sync::Arc;
 use tracing::{debug, error};
-/// Represents a connection to the server. It contains the TCPStream returned by the connection
-/// and a read buffer
+
+/// Connection struct contains the TCP Stream derived from an established connection. Both reader
+/// and writer share the same underline stream. State is a shared reference of the Cache database
 pub struct Connection {
     reader: BufReader<TcpStream>,
     writer: BufWriter<TcpStream>,
@@ -20,11 +21,6 @@ impl Connection {
     //     self.conn.shutdown(Shutdown::Both)
     // }
     pub fn new(stream: TcpStream, state: Arc<db::State>) -> io::Result<Self> {
-        // set write timeout on the stream as we won't be using async for now
-        // stream.set_write_timeout(WRITE_TIMEOUT)?;
-        // // stream_clone is a reference count for stream
-        // let read_clone = stream.clo()?;
-        // let write_clone = stream.try_clone()?;
         let stream_clone = stream.try_clone()?;
         // let mut reader = BufReader::new(read_half);
         let writer = BufWriter::new(stream_clone);
@@ -51,7 +47,7 @@ impl Connection {
         Ok(())
     }
 
-    /// send_error sends an error response to the client
+    /// send_error converts an error to a Frame Error and send it back to the client.
     pub fn send_error(&mut self, err: &HandleCommandError) {
         let err_frame = Frame::Error(err.to_string());
         if let Err(e) = self.write_frame(&err_frame) {
@@ -82,7 +78,7 @@ impl Connection {
                 command
                     .apply(&mut self.writer, &self.state)
                     .unwrap_or_else(|err| {
-                        // This error happens when things cannot be written to the connection,
+                        // This error happens when the data cannot be written to the connection,
                         // So it is not useful to try to send it to the client over the connection.
                         error!(
                             error_message = err.to_string(),
@@ -106,47 +102,3 @@ impl Connection {
         }
     }
 }
-//
-// #[tokio::test]
-// async fn test_read_frame_with_real_network() {
-//     use async_std::net::{TcpListener, TcpStream};
-//     // Set up a Tcp listener
-//     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-//     let addr = listener.local_addr().unwrap();
-//
-//     // Set up a separate task that accepts the connection and writes data to the stream
-//     async_std::task::spawn(async move {
-//         if let Ok((mut socket, _)) = listener.accept().await {
-//             let _ = socket
-//                 // .write_all(b"*2\r\n$5\r\nhello\r\n:28\r\n+simple\r\n_\r\n#t\r\n")
-//                 .write_all(b"$5\r\nhello\r\n")
-//                 .await;
-//         }
-//     });
-//
-//     // Create a TcpStream connected to the listener
-//     let stream = TcpStream::connect(addr).await.unwrap();
-//
-//     // Set up your Connection
-//     let stream_clone = stream.clone();
-//     let state =
-//         Arc::new(db::State::new(500, 8, Arc::new((Mutex::new(true), Condvar::new())), 90).unwrap());
-//
-//     let mut conn = Connection {
-//         reader: BufReader::new(stream_clone),
-//         writer: BufWriter::new(stream),
-//         buffer: Vec::with_capacity(4 * 1024),
-//         state,
-//     };
-//
-//     // Perform the test
-//     let got = conn.read_frame().await.unwrap();
-//     let mut want = Frame::array();
-//     want.push_back(Frame::Bulk("hello".to_string()))
-//         .expect("success");
-//     want.push_back(Frame::Integer(28)).expect("success");
-//     assert_eq!(got, Frame::Bulk("hello".to_string()));
-//     // assert_eq!(got, Frame::Simple("Hello World".to_string()));
-//
-//     // Add your assertions here...
-// }

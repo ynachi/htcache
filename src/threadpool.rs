@@ -90,21 +90,9 @@ impl ThreadPool {
         };
     }
 
-    /// Shuts down the thread pool. Sends a `Message::Shutdown` to each worker and waits for them to finish.
-    /// Decrements the `size` of the thread pool as each worker thread finishes to avoid using a dropped `sender`
+    /// shutdown Shuts down the thread pool. It sends a `Message::Shutdown` to each worker and waits for them to finish.
+    /// It also decrements the `size` of the thread pool as each worker thread finishes to avoid using a dropped `sender`
     /// in subsequent calls to `shutdown`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// //use redisy::threadpool::ThreadPool;
-    ///
-    /// //let mut pool = ThreadPool::new(4).unwrap();
-    ///
-    /// // ... do some work with the thread pool ...
-    ///
-    /// //pool.shutdown();
-    /// ```
     pub fn shutdown(&mut self) {
         for _ in 0..self.size {
             if let Err(e) = self.sender.send(Message::Shutdown) {
@@ -116,10 +104,10 @@ impl ThreadPool {
                 thread
                     .join()
                     .unwrap_or_else(|_| error!("error while joining thread"));
-                // At the end of the execution of this method, all the workers will be replace
-                // by None and the `sender` end of the channel will be drop. So running this method
+                // At the end of the execution of this method, all the workers will be replaced
+                // by None and the `sender` end of the channel will be dropped. So running this method
                 // again would make an attempt to use a dropped `sender`. To avoid that, we
-                // decrement `size` as the thread shutdown. This way, subsequent calls to shutdown
+                // decrement `size` as the thread shutdown. This way, subsequent calls to shut down
                 // would have no effect.
                 self.size -= 1
             }
@@ -130,7 +118,7 @@ impl ThreadPool {
 impl Drop for ThreadPool {
     /// If a ThreadPool goes out of scope, it would drop the channel at the sender end.
     /// Dropping at this end will cause the connection to drop so some jobs might not reach execution.
-    /// The programmer is suppose to call the `shutdown` method by himself but in case he does not, the drop method
+    /// The programmer is supposed to call the `shutdown` method by himself but in case he does not, the drop method
     /// would hold his back by joining the threads.
     /// Doing so will allow all the jobs to finish and the threads to gracefully exit.
     fn drop(&mut self) {
@@ -155,7 +143,7 @@ impl Worker {
     ///
     /// # Returns
     ///
-    /// An `Option` containing a `Worker` if the thread was successfully created, or `None` if the OS failed to create the thread.
+    /// A `Result` containing a `Worker` if the thread was successfully created, or `Error` if the OS failed to create the thread.
     fn new(id: usize, receiver: SharedReceiver) -> io::Result<Worker> {
         let worker_process = move || Self::process_messages(id, &receiver);
         let thread = thread::Builder::new().spawn(worker_process)?;
@@ -174,7 +162,6 @@ impl Worker {
 
                     if result.is_err() {
                         error!("the job caused the worker {} to panic!", id);
-                        // @TODO: maybe retry the job
                     }
                 }
 
@@ -238,7 +225,7 @@ type Job = Box<dyn FnOnce() + 'static + Send>;
 /// distinguish between jobs and shutdown instruction. Note for learning purpose: this could also
 /// be achieved using an atomic bool shared to all the threads.
 enum Message {
-    /// A worker receiving this message variant has to shutdown (break the infinite loop)
+    /// A worker receiving this message variant has to shut down (break the infinite loop)
     Shutdown,
     /// `Job` represents a job to be executed by a worker
     Task(Job),
