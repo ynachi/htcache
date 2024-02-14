@@ -1,7 +1,7 @@
 use crate::connection::Connection;
-use crate::db;
 use crate::db::State;
 use crate::error::{FrameError, HandleCommandError};
+use crate::{db, threadpool};
 use std::fmt::Debug;
 use std::io;
 use std::net::{TcpListener, TcpStream};
@@ -10,7 +10,7 @@ use tracing::{debug, error, info};
 
 #[derive(Debug)]
 pub struct Server {
-    // thread_pool: threadpool::ThreadPool,
+    thread_pool: threadpool::ThreadPool,
     tcp_listener: TcpListener,
     cache: db::Cache,
     // @ TODO: uncomment and implement
@@ -25,21 +25,20 @@ pub struct Server {
 pub fn create_server(
     server_ip: String,
     server_port: u16,
-    // worker_count: usize,
+    worker_count: usize,
     cache_capacity: usize,
     shard_count: usize,
     eviction_threshold: u8,
 ) -> io::Result<Server> {
-    // let thread_pool = threadpool::ThreadPool::new(worker_count)?;
     let ip = format!("{}:{}", server_ip, server_port);
     let tcp_listener = TcpListener::bind(ip)?;
+    let thread_pool = crate::threadpool::ThreadPool::new(worker_count)?;
 
     info!("htcache server initialized");
-
     let cache = db::create_cache(cache_capacity, shard_count, eviction_threshold)?;
 
     Ok(Server {
-        // thread_pool,
+        thread_pool,
         tcp_listener,
         cache,
     })
@@ -54,7 +53,6 @@ impl Server {
         // show server's info to the user
         info!("{:?}", self);
         info!("htcache server ready for new connections");
-        let pool = crate::threadpool::ThreadPool::new(80).unwrap();
         loop {
             let conn_string = self.tcp_listener.accept();
             match conn_string {
@@ -64,7 +62,7 @@ impl Server {
                     // Each connection needs to read and update the state so create a shared reference of the state
                     // and share it to the process_socket function.
                     let db = self.cache.db();
-                    pool.execute(move || {
+                    self.thread_pool.execute(move || {
                         process_socket(socket, db);
                     });
                 }
