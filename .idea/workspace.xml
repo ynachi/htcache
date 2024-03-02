@@ -14,9 +14,6 @@
   <component name="ChangeListManager">
     <list default="true" id="6014c35b-c356-42a3-9550-bac009aceb4d" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/connection.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/connection.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/server.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/server.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/threadpool.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/threadpool.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -34,6 +31,9 @@
         <option value="Rust File" />
       </list>
     </option>
+  </component>
+  <component name="FormatOnSaveOptions">
+    <option name="myRunOnSave" value="true" />
   </component>
   <component name="GOROOT" url="file:///opt/homebrew/opt/go/libexec" />
   <component name="Git.Settings">
@@ -69,7 +69,7 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "Cargo.Build `Run htcache`.executor": "Run",
-    "Cargo.Run htcache.executor": "Debug",
+    "Cargo.Run htcache.executor": "Run",
     "Cargo.Run redisy.executor": "Debug",
     "Cargo.Test cmap::tests.executor": "Run",
     "Cargo.Test connection::test_read_frame_with_real_network.executor": "Debug",
@@ -119,6 +119,9 @@
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
+    "project.structure.last.edited": "Problems",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.0",
     "settings.editor.selected.configurable": "preferences.pluginManager",
     "vue.rearranger.settings.migration": "true"
   }
@@ -227,7 +230,18 @@
   <component name="RustfmtProjectSettings">
     <option name="runRustfmtOnSave" value="true" />
   </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="jdk-21.0.2-openjdk-21.0.2-4caba194b151-322ed176" />
+      </set>
+    </attachedChunks>
+  </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="SwiftWorkspaceSettings">
+    <option name="detectedToolchain" value="true" />
+    <option name="toolchainPathValue" value="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain" />
+  </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="6014c35b-c356-42a3-9550-bac009aceb4d" name="Changes" comment="" />
@@ -302,6 +316,14 @@
       <workItem from="1707512215169" duration="3018000" />
       <workItem from="1707811471982" duration="849000" />
       <workItem from="1707815327909" duration="2575000" />
+      <workItem from="1707927505451" duration="56000" />
+      <workItem from="1707929209664" duration="560000" />
+      <workItem from="1707944727075" duration="133000" />
+      <workItem from="1708100882781" duration="2081000" />
+      <workItem from="1708103664729" duration="1347000" />
+      <workItem from="1708161343716" duration="3779000" />
+      <workItem from="1708322897690" duration="659000" />
+      <workItem from="1708767027498" duration="1152000" />
     </task>
     <servers />
   </component>

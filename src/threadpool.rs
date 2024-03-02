@@ -9,7 +9,7 @@ use tracing::{debug, error};
 /// `ThreadPool` is a data structure representing a pool of threads which continuously watch
 /// for new jobs to execute until they are explicitly shutdown. This struct is not meant to be
 /// instantiated directly. It is instead created using the `new` method. There is no explicit
-/// worker pool termination. The threads terminates when the pool goes out of scope. (see
+/// worker pool termination. The threads terminate when the pool goes out of scope. (see
 /// drop trait implementation for `ThreadPool`). A `ThreadPool` should ne terminated by calling
 /// the `shutdown` method. Not doing so will cause the program to panic. This was a design
 /// choice to allow the programmer to explicitly shutdown a `ThreadPool` when needed.
